@@ -2,6 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { FileText } from "lucide-react";
 import type { Task } from "@/lib/tasks/types";
 import { cn } from "@/lib/utils";
 
@@ -48,7 +49,12 @@ export function TaskCard({ task, onClick, isDragging }: TaskCardProps) {
       {...attributes}
       {...listeners}
     >
-      <span className="text-sm font-medium break-words">{task.title}</span>
+      <div className="flex items-start gap-2">
+        <span className="flex-1 text-sm font-medium break-words">{task.title}</span>
+        {task.description && (
+          <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+        )}
+      </div>
     </div>
   );
 }
@@ -65,7 +71,12 @@ export function TaskCardOverlay({ task }: TaskCardOverlayProps) {
         "rotate-3 scale-105"
       )}
     >
-      <span className="text-sm font-medium break-words">{task.title}</span>
+      <div className="flex items-start gap-2">
+        <span className="flex-1 text-sm font-medium break-words">{task.title}</span>
+        {task.description && (
+          <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+        )}
+      </div>
     </div>
   );
 }
