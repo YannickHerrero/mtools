@@ -1,11 +1,13 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type { Collection, Folder, SavedRequest, RequestHistory } from './api-client/types';
+import type { Task } from './tasks/types';
 
 const db = new Dexie('mtools') as Dexie & {
   collections: EntityTable<Collection, 'id'>;
   folders: EntityTable<Folder, 'id'>;
   savedRequests: EntityTable<SavedRequest, 'id'>;
   requestHistory: EntityTable<RequestHistory, 'id'>;
+  tasks: EntityTable<Task, 'id'>;
 };
 
 db.version(1).stores({
@@ -13,6 +15,14 @@ db.version(1).stores({
   folders: '++id, collectionId, parentFolderId, name, createdAt, updatedAt',
   savedRequests: '++id, collectionId, folderId, name, method, url, createdAt, updatedAt',
   requestHistory: '++id, method, url, executedAt',
+});
+
+db.version(2).stores({
+  collections: '++id, name, createdAt, updatedAt',
+  folders: '++id, collectionId, parentFolderId, name, createdAt, updatedAt',
+  savedRequests: '++id, collectionId, folderId, name, method, url, createdAt, updatedAt',
+  requestHistory: '++id, method, url, executedAt',
+  tasks: '++id, status, order, createdAt, updatedAt',
 });
 
 // History limit - keep only the last 100 entries
