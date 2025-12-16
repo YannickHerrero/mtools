@@ -3,6 +3,7 @@ import type { Collection, Folder, SavedRequest, RequestHistory } from './api-cli
 import type { Task } from './tasks/types';
 import type { Note, NoteCollection, NoteFolder } from './notes/types';
 import type { DatabaseConnection } from './database/types';
+import type { Whiteboard, WhiteboardCollection, WhiteboardFolder } from './whiteboard/types';
 
 const db = new Dexie('mtools') as Dexie & {
   collections: EntityTable<Collection, 'id'>;
@@ -14,6 +15,9 @@ const db = new Dexie('mtools') as Dexie & {
   noteFolders: EntityTable<NoteFolder, 'id'>;
   notes: EntityTable<Note, 'id'>;
   databaseConnections: EntityTable<DatabaseConnection, 'id'>;
+  whiteboardCollections: EntityTable<WhiteboardCollection, 'id'>;
+  whiteboardFolders: EntityTable<WhiteboardFolder, 'id'>;
+  whiteboards: EntityTable<Whiteboard, 'id'>;
 };
 
 db.version(1).stores({
@@ -65,6 +69,22 @@ db.version(5).stores({
   noteFolders: '++id, collectionId, parentFolderId, name, createdAt, updatedAt',
   notes: '++id, collectionId, folderId, title, content, createdAt, updatedAt',
   databaseConnections: '++id, name, provider, createdAt, updatedAt',
+});
+
+// Version 6: Add whiteboard tables
+db.version(6).stores({
+  collections: '++id, name, createdAt, updatedAt',
+  folders: '++id, collectionId, parentFolderId, name, createdAt, updatedAt',
+  savedRequests: '++id, collectionId, folderId, name, method, url, createdAt, updatedAt',
+  requestHistory: '++id, method, url, executedAt',
+  tasks: '++id, status, order, createdAt, updatedAt',
+  noteCollections: '++id, name, isInbox, createdAt, updatedAt',
+  noteFolders: '++id, collectionId, parentFolderId, name, createdAt, updatedAt',
+  notes: '++id, collectionId, folderId, title, content, createdAt, updatedAt',
+  databaseConnections: '++id, name, provider, createdAt, updatedAt',
+  whiteboardCollections: '++id, name, isInbox, createdAt, updatedAt',
+  whiteboardFolders: '++id, collectionId, parentFolderId, name, createdAt, updatedAt',
+  whiteboards: '++id, collectionId, folderId, title, createdAt, updatedAt',
 });
 
 // History limit - keep only the last 100 entries
@@ -143,6 +163,66 @@ export async function ensureInboxCollection(): Promise<number> {
     createdAt: now,
     updatedAt: now,
   } as NoteCollection) as number;
+  
+  return id;
+}
+
+// Ensure the Whiteboard Inbox collection exists (and clean up duplicates)
+export async function ensureWhiteboardInboxCollection(): Promise<number> {
+  const allCollections = await db.whiteboardCollections.toArray();
+  
+  // Find all Inbox collections (by flag or by name)
+  const inboxCollections = allCollections.filter(
+    c => c.isInbox === true || c.name === 'Inbox'
+  );
+  
+  if (inboxCollections.length > 1) {
+    // Clean up duplicates - keep the first one, delete others
+    const [keepInbox, ...duplicates] = inboxCollections;
+    for (const duplicate of duplicates) {
+      if (duplicate.id) {
+        // Move whiteboards from duplicate to the kept inbox
+        await db.whiteboards
+          .where('collectionId')
+          .equals(duplicate.id)
+          .modify({ collectionId: keepInbox.id! });
+        
+        // Move folders from duplicate to the kept inbox
+        await db.whiteboardFolders
+          .where('collectionId')
+          .equals(duplicate.id)
+          .modify({ collectionId: keepInbox.id! });
+        
+        // Delete the duplicate collection
+        await db.whiteboardCollections.delete(duplicate.id);
+      }
+    }
+    
+    // Ensure the kept one has the isInbox flag
+    if (keepInbox.id && !keepInbox.isInbox) {
+      await db.whiteboardCollections.update(keepInbox.id, { isInbox: true });
+    }
+    
+    return keepInbox.id!;
+  }
+  
+  if (inboxCollections.length === 1) {
+    const inbox = inboxCollections[0];
+    // Ensure it has the isInbox flag
+    if (inbox.id && !inbox.isInbox) {
+      await db.whiteboardCollections.update(inbox.id, { isInbox: true });
+    }
+    return inbox.id!;
+  }
+  
+  // No inbox exists, create one
+  const now = new Date();
+  const id = await db.whiteboardCollections.add({
+    name: 'Inbox',
+    isInbox: true,
+    createdAt: now,
+    updatedAt: now,
+  } as WhiteboardCollection) as number;
   
   return id;
 }
