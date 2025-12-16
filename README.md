@@ -69,6 +69,20 @@ Browse and query your databases directly from the browser:
 - **Schema Visualizer** - View table schemas with column types and foreign keys
 - **Encrypted Storage** - Passwords and SSH keys are encrypted locally
 
+### KeePass Password Manager
+
+A secure password manager for managing KeePass databases (.kdbx files) directly in your browser:
+
+- **KeePass Support** - Open and manage KeePass v2 databases with full encryption support
+- **Key File Support** - Optional key file support for two-factor authentication
+- **Hierarchy Management** - Browse entries organized in groups and folders
+- **Full-Text Search** - Quickly search across all entries in your database
+- **Entry Details** - View usernames, passwords, URLs, tags, and notes
+- **Secure Clipboard** - Auto-clearing clipboard operations (30 seconds)
+- **Multiple Databases** - Manage and unlock multiple KeePass databases simultaneously
+- **Client-Side Security** - All decryption happens locally in your browser
+- **Lock/Unlock** - Lock databases to free memory while keeping them accessible
+
 ## Keyboard Shortcuts
 
 MTools uses a leader key system inspired by Vim. Press `Space` to activate leader mode.
@@ -84,6 +98,7 @@ MTools uses a leader key system inspired by Vim. Press `Space` to activate leade
 | `Space` `b` | Go to Bookmarks |
 | `Space` `a` | Go to API Client |
 | `Space` `d` | Go to Database |
+| `Space` `k` | Go to KeePass |
 | `Escape` | Cancel leader mode |
 
 ### Context-Aware
@@ -99,6 +114,9 @@ MTools uses a leader key system inspired by Vim. Press `Space` to activate leade
 | `Space` `o` | Add new bookmark | Bookmarks |
 | `Space` `c` | Add new category | Bookmarks |
 | `Space` `s` | Focus search | Bookmarks |
+| `Space` `o` | Add database | KeePass |
+| `Space` `s` | Focus search | KeePass |
+| `Space` `l` | Lock database | KeePass |
 
 ## Tech Stack
 

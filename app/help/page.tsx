@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, Keyboard, Navigation, Database, Layers, StickyNote, Send, HelpCircle, PenTool } from "lucide-react";
+import { Bookmark, Keyboard, Navigation, Database, Layers, StickyNote, Send, HelpCircle, PenTool, KeyRound } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -70,13 +70,17 @@ export default function HelpPage() {
                       <td className="px-4 py-2">Go to Database</td>
                     </tr>
                     <tr className="border-b">
-                      <td className="px-4 py-2"><Kbd>Space</Kbd> <Kbd>b</Kbd></td>
-                      <td className="px-4 py-2">Go to Bookmarks</td>
-                    </tr>
-                    <tr>
-                      <td className="px-4 py-2"><Kbd>Escape</Kbd></td>
-                      <td className="px-4 py-2">Cancel leader mode</td>
-                    </tr>
+                       <td className="px-4 py-2"><Kbd>Space</Kbd> <Kbd>b</Kbd></td>
+                       <td className="px-4 py-2">Go to Bookmarks</td>
+                     </tr>
+                     <tr className="border-b">
+                       <td className="px-4 py-2"><Kbd>Space</Kbd> <Kbd>k</Kbd></td>
+                       <td className="px-4 py-2">Go to KeePass</td>
+                     </tr>
+                     <tr>
+                       <td className="px-4 py-2"><Kbd>Escape</Kbd></td>
+                       <td className="px-4 py-2">Cancel leader mode</td>
+                     </tr>
                   </tbody>
                 </table>
               </div>
@@ -138,13 +142,28 @@ export default function HelpPage() {
                       <td className="px-4 py-2">Add new category</td>
                       <td className="px-4 py-2 text-muted-foreground">Bookmarks</td>
                     </tr>
-                    <tr>
-                      <td className="px-4 py-2"><Kbd>Space</Kbd> <Kbd>s</Kbd></td>
-                      <td className="px-4 py-2">Focus search</td>
-                      <td className="px-4 py-2 text-muted-foreground">Bookmarks</td>
-                    </tr>
-                  </tbody>
-                </table>
+                     <tr className="border-b">
+                       <td className="px-4 py-2"><Kbd>Space</Kbd> <Kbd>s</Kbd></td>
+                       <td className="px-4 py-2">Focus search</td>
+                       <td className="px-4 py-2 text-muted-foreground">Bookmarks</td>
+                     </tr>
+                     <tr className="border-b">
+                       <td className="px-4 py-2"><Kbd>Space</Kbd> <Kbd>o</Kbd></td>
+                       <td className="px-4 py-2">Add database</td>
+                       <td className="px-4 py-2 text-muted-foreground">KeePass</td>
+                     </tr>
+                     <tr className="border-b">
+                       <td className="px-4 py-2"><Kbd>Space</Kbd> <Kbd>s</Kbd></td>
+                       <td className="px-4 py-2">Focus search</td>
+                       <td className="px-4 py-2 text-muted-foreground">KeePass</td>
+                     </tr>
+                     <tr>
+                       <td className="px-4 py-2"><Kbd>Space</Kbd> <Kbd>l</Kbd></td>
+                       <td className="px-4 py-2">Lock database</td>
+                       <td className="px-4 py-2 text-muted-foreground">KeePass</td>
+                     </tr>
+                   </tbody>
+                 </table>
               </div>
             </div>
 
@@ -339,13 +358,37 @@ export default function HelpPage() {
                 <li><strong>Data Viewer:</strong> Browse table data with pagination, sorting, and filtering</li>
                 <li><strong>Schema Visualizer:</strong> View table schemas with column types and foreign keys</li>
                 <li><strong>Encrypted Storage:</strong> Passwords and SSH keys are encrypted locally</li>
+               </ul>
+             </div>
+
+            {/* KeePass */}
+            <div className="rounded-lg border p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center">
+                  <KeyRound className="h-4 w-4 text-primary" />
+                </div>
+                <h3 className="font-medium">KeePass Password Manager</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                A secure password manager for managing KeePass databases (.kdbx files) directly in your browser:
+              </p>
+              <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                <li><strong>KeePass Support:</strong> Open and manage KeePass v2 databases (.kdbx) with full encryption support</li>
+                <li><strong>Key File Support:</strong> Optional key file support for two-factor authentication</li>
+                <li><strong>Hierarchy Management:</strong> Browse password entries organized in groups and folders</li>
+                <li><strong>Full-Text Search:</strong> Quickly search across all entries in your database</li>
+                <li><strong>Entry Details:</strong> View entry information including username, password, URL, tags, and notes</li>
+                <li><strong>Copy to Clipboard:</strong> Secure clipboard operations with auto-clearing after 30 seconds</li>
+                <li><strong>Multiple Databases:</strong> Manage and unlock multiple KeePass databases simultaneously</li>
+                <li><strong>Client-Side Security:</strong> All decryption happens locally in your browser - passwords never leave your device</li>
+                <li><strong>Lock/Unlock:</strong> Lock individual databases to free memory while keeping them accessible</li>
               </ul>
             </div>
-          </section>
+           </section>
 
-          <Separator />
+           <Separator />
 
-          {/* Data Storage */}
+           {/* Data Storage */}
           <section className="space-y-4">
             <div className="flex items-center gap-2">
               <Database className="h-5 w-5" />
