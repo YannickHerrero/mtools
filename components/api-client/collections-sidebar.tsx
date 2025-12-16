@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
   Plus,
@@ -54,6 +54,23 @@ export function CollectionsSidebar({ onLoadRequest, currentRequestId }: Collecti
   const collections = useLiveQuery(() => db.collections.toArray());
   const folders = useLiveQuery(() => db.folders.toArray());
   const requests = useLiveQuery(() => db.savedRequests.toArray());
+
+  // Track if we've done the initial expansion
+  const hasInitiallyExpanded = useRef(false);
+
+  // Expand all collections and folders on initial load
+  useEffect(() => {
+    if (!hasInitiallyExpanded.current && collections && folders) {
+      const collectionIds = collections.map((c) => c.id!).filter(Boolean);
+      const folderIds = folders.map((f) => f.id!).filter(Boolean);
+      
+      if (collectionIds.length > 0 || folderIds.length > 0) {
+        setExpandedCollections(new Set(collectionIds));
+        setExpandedFolders(new Set(folderIds));
+        hasInitiallyExpanded.current = true;
+      }
+    }
+  }, [collections, folders]);
 
   const createCollection = async () => {
     if (!newCollectionName.trim()) return;
