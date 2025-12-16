@@ -444,8 +444,8 @@ export default function ApiClientPage() {
 
               {/* Response Panel */}
               <ResizablePanel defaultSize={50} minSize={20}>
-                <div className="h-full flex flex-col">
-                  <div className="px-4 py-2 border-t flex items-center gap-4">
+                <div className="h-full flex flex-col overflow-hidden">
+                  <div className="px-4 py-2 border-t flex items-center gap-4 shrink-0">
                     <span className="text-sm font-medium">Response</span>
                     {response && (
                       <>
@@ -463,53 +463,55 @@ export default function ApiClientPage() {
                       </>
                     )}
                   </div>
-                  <ScrollArea className="flex-1">
-                    {response ? (
-                      <div className="p-4">
-                        <Collapsible
-                          open={responseHeadersOpen}
-                          onOpenChange={setResponseHeadersOpen}
-                        >
-                          <CollapsibleTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="mb-2"
-                            >
-                              {responseHeadersOpen ? (
-                                <ChevronUp className="h-4 w-4 mr-2" />
-                              ) : (
-                                <ChevronDown className="h-4 w-4 mr-2" />
-                              )}
-                              Headers ({response.headers.length})
-                            </Button>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent className="mb-4">
-                            <div className="bg-muted rounded-md p-2 space-y-1">
-                              {response.headers.map((header) => (
-                                <div
-                                  key={header.id}
-                                  className="flex gap-2 text-sm font-mono"
-                                >
-                                  <span className="text-muted-foreground">
-                                    {header.key}:
-                                  </span>
-                                  <span className="truncate">{header.value}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </CollapsibleContent>
-                        </Collapsible>
-                        <pre className="bg-muted rounded-md p-4 text-sm font-mono overflow-x-auto whitespace-pre-wrap break-all">
-                          {formatJson(response.body)}
-                        </pre>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-muted-foreground">
-                        <p>Send a request to see the response</p>
-                      </div>
-                    )}
-                  </ScrollArea>
+                  <div className="flex-1 overflow-hidden">
+                    <ScrollArea className="h-full">
+                      {response ? (
+                        <div className="p-4">
+                          <Collapsible
+                            open={responseHeadersOpen}
+                            onOpenChange={setResponseHeadersOpen}
+                          >
+                            <CollapsibleTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="mb-2"
+                              >
+                                {responseHeadersOpen ? (
+                                  <ChevronUp className="h-4 w-4 mr-2" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4 mr-2" />
+                                )}
+                                Headers ({response.headers.length})
+                              </Button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="mb-4">
+                              <div className="bg-muted rounded-md p-2 space-y-1">
+                                {response.headers.map((header) => (
+                                  <div
+                                    key={header.id}
+                                    className="flex gap-2 text-sm font-mono"
+                                  >
+                                    <span className="text-muted-foreground">
+                                      {header.key}:
+                                    </span>
+                                    <span className="truncate">{header.value}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                          <pre className="bg-muted rounded-md p-4 text-sm font-mono overflow-x-auto whitespace-pre-wrap break-all">
+                            {formatJson(response.body)}
+                          </pre>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-muted-foreground">
+                          <p>Send a request to see the response</p>
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </div>
                 </div>
               </ResizablePanel>
             </ResizablePanelGroup>

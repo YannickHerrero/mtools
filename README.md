@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MTools
+
+A unified toolkit for work management and developer utilities.
+
+## Features
+
+### API Client (Postman Alternative)
+
+A fully-featured API testing tool that runs locally in your browser:
+
+- **HTTP Methods** - Support for GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS
+- **Request Builder** - Query parameters, headers, and JSON body editor with auto-completion
+- **Collections** - Organize requests into collections with nested folders
+- **Request History** - Automatically saves last 100 requests for quick access
+- **Local Storage** - All data persisted locally using IndexedDB (no cloud required)
+- **CORS Proxy** - Built-in proxy to test any external API without CORS issues
+
+### Task Board (Coming Soon)
+
+A Trello-like kanban board for personal task management.
+
+### Notes (Coming Soon)
+
+A minimal note-taking app for quick capture.
+
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **UI**: shadcn/ui + Tailwind CSS
+- **Database**: IndexedDB via Dexie.js
+- **Theme**: Dark/Light/System mode support
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# Install dependencies
+pnpm install
+
+# Run development server
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to access the toolkit.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Privacy
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+All data is stored locally in your browser using IndexedDB. Nothing is sent to external servers (except your actual API requests through the proxy).
 
-## Learn More
+## License
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
