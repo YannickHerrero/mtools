@@ -46,6 +46,14 @@ import type {
 } from "@/lib/api-client/types";
 import { cn } from "@/lib/utils";
 
+// State for tracking what was actually sent in the last request
+interface ExecutedRequest {
+  method: HttpMethod;
+  url: string;
+  headers: KeyValue[];
+  body: string;
+}
+
 const HTTP_METHODS: HttpMethod[] = [
   "GET",
   "POST",
@@ -91,10 +99,11 @@ export default function ApiClientPage() {
   const [request, setRequest] = useState(createDefaultRequest());
   const [response, setResponse] = useState<ResponseState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [executedRequest, setExecutedRequest] = useState<ExecutedRequest | null>(null);
   const [showHistory, setShowHistory] = useState(true);
   const [responseHeadersOpen, setResponseHeadersOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [responseTab, setResponseTab] = useState<"response" | "request">("response");
 
   const history = useLiveQuery(
     () => db.requestHistory.orderBy("executedAt").reverse().limit(50).toArray(),
@@ -126,13 +135,19 @@ export default function ApiClientPage() {
 
   const sendRequest = async () => {
     if (!request.url) {
-      setError("URL is required");
+      setResponse({
+        status: 0,
+        statusText: "Validation Error",
+        headers: [],
+        body: "Error: URL is required",
+        time: 0,
+      });
       return;
     }
 
     setIsLoading(true);
-    setError(null);
     setResponse(null);
+    setExecutedRequest(null);
 
     try {
       const finalUrl = buildUrl();
@@ -182,6 +197,14 @@ export default function ApiClientPage() {
         }
       }
 
+      // Store the executed request details for display
+      setExecutedRequest({
+        method: request.method,
+        url: finalUrl,
+        headers: enabledHeaders,
+        body: request.body || "",
+      });
+
       const proxyResponse = await fetch("/api/proxy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -195,29 +218,30 @@ export default function ApiClientPage() {
 
       const data = await proxyResponse.json();
 
-      if (data.error && data.status === 0) {
-        setError(data.error);
-      } else {
-        const responseHeaders: KeyValue[] = Object.entries(data.headers || {}).map(
-          ([key, value]) => ({
-            id: crypto.randomUUID(),
-            key,
-            value: value as string,
-            enabled: true,
-          })
-        );
+      const responseHeaders: KeyValue[] = Object.entries(data.headers || {}).map(
+        ([key, value]) => ({
+          id: crypto.randomUUID(),
+          key,
+          value: value as string,
+          enabled: true,
+        })
+      );
 
-        const responseData: ResponseState = {
-          status: data.status,
-          statusText: data.statusText,
-          headers: responseHeaders,
-          body: data.body,
-          time: data.time,
-        };
+      // Create response object for both success and error cases
+      const responseData: ResponseState = {
+        status: data.status,
+        statusText: data.error || data.statusText,
+        headers: responseHeaders,
+        body: data.error && data.status === 0 
+          ? `Error: ${data.error}` 
+          : data.body,
+        time: data.time,
+      };
 
-        setResponse(responseData);
+      setResponse(responseData);
 
-        // Add to history
+      // Only add to history for successful requests (not network errors)
+      if (!(data.error && data.status === 0)) {
         await addToHistory({
           method: request.method,
           url: finalUrl,
@@ -233,7 +257,15 @@ export default function ApiClientPage() {
         });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      // Create an error response to display in the response panel
+      setResponse({
+        status: 0,
+        statusText: "Network Error",
+        headers: [],
+        body: `Error: ${errorMessage}`,
+        time: 0,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -299,7 +331,7 @@ export default function ApiClientPage() {
               onLoadRequest={(req) => {
                 setRequest(req);
                 setResponse(null);
-                setError(null);
+                setExecutedRequest(null);
               }}
               currentRequestId={request.id}
             />
@@ -421,9 +453,6 @@ export default function ApiClientPage() {
                   <Save className="h-4 w-4" />
                 </Button>
               </div>
-              {error && (
-                <p className="text-sm text-destructive mt-2">{error}</p>
-              )}
             </div>
 
             <ResizablePanelGroup direction="vertical" className="flex-1">
@@ -486,11 +515,14 @@ export default function ApiClientPage() {
 
               <ResizableHandle />
 
-              {/* Response Panel */}
+              {/* Response Panel with Tabs */}
               <ResizablePanel defaultSize={50} minSize={20}>
-                <div className="h-full flex flex-col overflow-hidden">
+                <Tabs value={responseTab} onValueChange={(v) => setResponseTab(v as "response" | "request")} className="h-full flex flex-col">
                   <div className="px-4 py-2 border-t flex items-center gap-4 shrink-0">
-                    <span className="text-sm font-medium">Response</span>
+                    <TabsList>
+                      <TabsTrigger value="response">Response</TabsTrigger>
+                      <TabsTrigger value="request">Request</TabsTrigger>
+                    </TabsList>
                     {response && (
                       <>
                         <Badge
@@ -501,13 +533,17 @@ export default function ApiClientPage() {
                         >
                           {response.status} {response.statusText}
                         </Badge>
-                        <span className="text-sm text-muted-foreground">
-                          {response.time}ms
-                        </span>
+                        {response.time > 0 && (
+                          <span className="text-sm text-muted-foreground">
+                            {response.time}ms
+                          </span>
+                        )}
                       </>
                     )}
                   </div>
-                  <div className="flex-1 overflow-hidden">
+                  
+                  {/* Response Tab Content */}
+                  <TabsContent value="response" className="flex-1 m-0 overflow-hidden">
                     <ScrollArea className="h-full">
                       {response ? (
                         <div className="p-4">
@@ -531,21 +567,28 @@ export default function ApiClientPage() {
                             </CollapsibleTrigger>
                             <CollapsibleContent className="mb-4">
                               <div className="bg-muted rounded-md p-2 space-y-1">
-                                {response.headers.map((header) => (
-                                  <div
-                                    key={header.id}
-                                    className="flex gap-2 text-sm font-mono"
-                                  >
-                                    <span className="text-muted-foreground">
-                                      {header.key}:
-                                    </span>
-                                    <span className="truncate">{header.value}</span>
-                                  </div>
-                                ))}
+                                {response.headers.length > 0 ? (
+                                  response.headers.map((header) => (
+                                    <div
+                                      key={header.id}
+                                      className="flex gap-2 text-sm font-mono"
+                                    >
+                                      <span className="text-muted-foreground">
+                                        {header.key}:
+                                      </span>
+                                      <span className="truncate">{header.value}</span>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <p className="text-sm text-muted-foreground">No headers</p>
+                                )}
                               </div>
                             </CollapsibleContent>
                           </Collapsible>
-                          <pre className="bg-muted rounded-md p-4 text-sm font-mono overflow-x-auto whitespace-pre-wrap break-all">
+                          <pre className={cn(
+                            "bg-muted rounded-md p-4 text-sm font-mono overflow-x-auto whitespace-pre-wrap break-all",
+                            response.status === 0 && "text-destructive"
+                          )}>
                             {formatJson(response.body)}
                           </pre>
                         </div>
@@ -555,8 +598,68 @@ export default function ApiClientPage() {
                         </div>
                       )}
                     </ScrollArea>
-                  </div>
-                </div>
+                  </TabsContent>
+
+                  {/* Request Tab Content - Shows what was actually sent */}
+                  <TabsContent value="request" className="flex-1 m-0 overflow-hidden">
+                    <ScrollArea className="h-full">
+                      {executedRequest ? (
+                        <div className="p-4 space-y-4 overflow-hidden">
+                          {/* Request URL */}
+                          <div className="overflow-hidden">
+                            <h4 className="text-sm font-medium mb-2">URL</h4>
+                            <div className="bg-muted rounded-md p-3 overflow-hidden">
+                              <div className="flex items-start gap-2 min-w-0">
+                                <Badge className={cn("shrink-0", METHOD_COLORS[executedRequest.method])}>
+                                  {executedRequest.method}
+                                </Badge>
+                                <code className="text-sm font-mono break-all min-w-0">
+                                  {executedRequest.url}
+                                </code>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Request Headers */}
+                          <div className="overflow-hidden">
+                            <h4 className="text-sm font-medium mb-2">
+                              Headers ({executedRequest.headers.length})
+                            </h4>
+                            <div className="bg-muted rounded-md p-2 space-y-1 overflow-hidden">
+                              {executedRequest.headers.length > 0 ? (
+                                executedRequest.headers.map((header) => (
+                                  <div
+                                    key={header.id}
+                                    className="flex gap-2 text-sm font-mono min-w-0"
+                                  >
+                                    <span className="text-muted-foreground shrink-0">
+                                      {header.key}:
+                                    </span>
+                                    <span className="break-all">{header.value}</span>
+                                  </div>
+                                ))
+                              ) : (
+                                <p className="text-sm text-muted-foreground">No headers sent</p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Request Body */}
+                          <div className="overflow-hidden">
+                            <h4 className="text-sm font-medium mb-2">Body</h4>
+                            <pre className="bg-muted rounded-md p-4 text-sm font-mono whitespace-pre-wrap break-all overflow-hidden">
+                              {executedRequest.body ? formatJson(executedRequest.body) : "(empty)"}
+                            </pre>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-muted-foreground">
+                          <p>Send a request to see request details</p>
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </TabsContent>
+                </Tabs>
               </ResizablePanel>
             </ResizablePanelGroup>
           </div>
