@@ -16,7 +16,7 @@ import {
   Search,
   PenTool,
 } from "lucide-react";
-import { db } from "@/lib/db";
+import { db, ensureInboxCollection, ensureWhiteboardInboxCollection } from "@/lib/db";
 import type { Note } from "@/lib/notes/types";
 import type { Whiteboard } from "@/lib/whiteboard/types";
 import { cn } from "@/lib/utils";
@@ -29,8 +29,10 @@ interface CommandMenuProps {
 export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
   const router = useRouter();
   const [search, setSearch] = React.useState("");
-  const [mode, setMode] = React.useState<"search" | "add-task">("search");
+  const [mode, setMode] = React.useState<"search" | "add-task" | "add-note" | "add-whiteboard">("search");
   const [taskTitle, setTaskTitle] = React.useState("");
+  const [noteTitle, setNoteTitle] = React.useState("");
+  const [whiteboardTitle, setWhiteboardTitle] = React.useState("");
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   // Fetch notes for search
@@ -61,12 +63,14 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
       setSearch("");
       setMode("search");
       setTaskTitle("");
+      setNoteTitle("");
+      setWhiteboardTitle("");
     }
   }, [open]);
 
-  // Focus input when mode changes to add-task
+  // Focus input when mode changes to an add mode
   React.useEffect(() => {
-    if (mode === "add-task" && inputRef.current) {
+    if (mode !== "search" && inputRef.current) {
       inputRef.current.focus();
     }
   }, [mode]);
@@ -105,16 +109,60 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
     onOpenChange(false);
   };
 
+  const handleAddNote = async () => {
+    if (!noteTitle.trim()) return;
+
+    const now = new Date();
+    const inboxId = await ensureInboxCollection();
+    const newNoteId = await db.notes.add({
+      collectionId: inboxId,
+      title: noteTitle.trim(),
+      content: "",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    setNoteTitle("");
+    setMode("search");
+    onOpenChange(false);
+    router.push(`/notes?noteId=${newNoteId}`);
+  };
+
+  const handleAddWhiteboard = async () => {
+    if (!whiteboardTitle.trim()) return;
+
+    const now = new Date();
+    const inboxId = await ensureWhiteboardInboxCollection();
+    const newWhiteboardId = await db.whiteboards.add({
+      collectionId: inboxId,
+      title: whiteboardTitle.trim(),
+      data: JSON.stringify({ elements: [], appState: {} }),
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    setWhiteboardTitle("");
+    setMode("search");
+    onOpenChange(false);
+    router.push(`/whiteboard?whiteboardId=${newWhiteboardId}`);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (mode === "add-task") {
-      if (e.key === "Enter") {
-        e.preventDefault();
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (mode === "add-task") {
         handleAddTask();
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        setMode("search");
-        setTaskTitle("");
+      } else if (mode === "add-note") {
+        handleAddNote();
+      } else if (mode === "add-whiteboard") {
+        handleAddWhiteboard();
       }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setMode("search");
+      setTaskTitle("");
+      setNoteTitle("");
+      setWhiteboardTitle("");
     }
   };
 
@@ -240,6 +288,22 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
                       <Plus className="h-4 w-4" />
                       <span>Add new task</span>
                     </Command.Item>
+                    <Command.Item
+                      value="add-note"
+                      onSelect={() => setMode("add-note")}
+                      className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer text-sm aria-selected:bg-accent aria-selected:text-accent-foreground"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Add new note</span>
+                    </Command.Item>
+                    <Command.Item
+                      value="add-whiteboard"
+                      onSelect={() => setMode("add-whiteboard")}
+                      className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer text-sm aria-selected:bg-accent aria-selected:text-accent-foreground"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Add new whiteboard</span>
+                    </Command.Item>
                   </Command.Group>
 
                   {/* Notes Section */}
@@ -307,7 +371,7 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
                   </div>
                 </div>
               </>
-            ) : (
+            ) : mode === "add-task" ? (
               /* Add Task Mode */
               <div className="p-4" onKeyDown={handleKeyDown}>
                 <div className="flex items-center gap-2 mb-3">
@@ -327,6 +391,60 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
                   <div className="flex items-center gap-2">
                     <kbd className="px-1.5 py-0.5 bg-muted rounded">↵</kbd>
                     <span>add task</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <kbd className="px-1.5 py-0.5 bg-muted rounded">esc</kbd>
+                    <span>cancel</span>
+                  </div>
+                </div>
+              </div>
+            ) : mode === "add-note" ? (
+              /* Add Note Mode */
+              <div className="p-4" onKeyDown={handleKeyDown}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Plus className="h-4 w-4" />
+                  <span className="font-medium">Add new note</span>
+                </div>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={noteTitle}
+                  onChange={(e) => setNoteTitle(e.target.value)}
+                  placeholder="Note title..."
+                  className="w-full px-3 py-2 rounded-md border bg-background text-sm outline-none focus:ring-2 focus:ring-ring"
+                  autoFocus
+                />
+                <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <kbd className="px-1.5 py-0.5 bg-muted rounded">↵</kbd>
+                    <span>add note</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <kbd className="px-1.5 py-0.5 bg-muted rounded">esc</kbd>
+                    <span>cancel</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Add Whiteboard Mode */
+              <div className="p-4" onKeyDown={handleKeyDown}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Plus className="h-4 w-4" />
+                  <span className="font-medium">Add new whiteboard</span>
+                </div>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={whiteboardTitle}
+                  onChange={(e) => setWhiteboardTitle(e.target.value)}
+                  placeholder="Whiteboard title..."
+                  className="w-full px-3 py-2 rounded-md border bg-background text-sm outline-none focus:ring-2 focus:ring-ring"
+                  autoFocus
+                />
+                <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <kbd className="px-1.5 py-0.5 bg-muted rounded">↵</kbd>
+                    <span>add whiteboard</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <kbd className="px-1.5 py-0.5 bg-muted rounded">esc</kbd>
