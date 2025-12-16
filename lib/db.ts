@@ -5,6 +5,7 @@ import type { Note, NoteCollection, NoteFolder } from './notes/types';
 import type { DatabaseConnection } from './database/types';
 import type { Whiteboard, WhiteboardCollection, WhiteboardFolder } from './whiteboard/types';
 import type { Bookmark, BookmarkCategory } from './bookmarks/types';
+import type { KeePassDatabase } from './keepass/types';
 
 const db = new Dexie('mtools') as Dexie & {
   collections: EntityTable<Collection, 'id'>;
@@ -21,6 +22,7 @@ const db = new Dexie('mtools') as Dexie & {
   whiteboards: EntityTable<Whiteboard, 'id'>;
   bookmarkCategories: EntityTable<BookmarkCategory, 'id'>;
   bookmarks: EntityTable<Bookmark, 'id'>;
+  keepassDatabases: EntityTable<KeePassDatabase, 'id'>;
 };
 
 db.version(1).stores({
@@ -106,6 +108,25 @@ db.version(7).stores({
   whiteboards: '++id, collectionId, folderId, title, createdAt, updatedAt',
   bookmarkCategories: '++id, name, order, createdAt, updatedAt',
   bookmarks: '++id, categoryId, title, url, order, createdAt, updatedAt',
+});
+
+// Version 8: Add KeePass databases table
+db.version(8).stores({
+  collections: '++id, name, createdAt, updatedAt',
+  folders: '++id, collectionId, parentFolderId, name, createdAt, updatedAt',
+  savedRequests: '++id, collectionId, folderId, name, method, url, createdAt, updatedAt',
+  requestHistory: '++id, method, url, executedAt',
+  tasks: '++id, status, order, createdAt, updatedAt',
+  noteCollections: '++id, name, isInbox, createdAt, updatedAt',
+  noteFolders: '++id, collectionId, parentFolderId, name, createdAt, updatedAt',
+  notes: '++id, collectionId, folderId, title, content, createdAt, updatedAt',
+  databaseConnections: '++id, name, provider, createdAt, updatedAt',
+  whiteboardCollections: '++id, name, isInbox, createdAt, updatedAt',
+  whiteboardFolders: '++id, collectionId, parentFolderId, name, createdAt, updatedAt',
+  whiteboards: '++id, collectionId, folderId, title, createdAt, updatedAt',
+  bookmarkCategories: '++id, name, order, createdAt, updatedAt',
+  bookmarks: '++id, categoryId, title, url, order, createdAt, updatedAt',
+  keepassDatabases: '++id, name, fileName, createdAt, updatedAt',
 });
 
 // History limit - keep only the last 100 entries
