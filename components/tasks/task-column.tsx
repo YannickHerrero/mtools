@@ -1,5 +1,6 @@
 "use client";
 
+import { forwardRef } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -7,7 +8,7 @@ import {
 } from "@dnd-kit/sortable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TaskCard } from "./task-card";
-import { CreateTaskInput } from "./create-task-input";
+import { CreateTaskInput, type CreateTaskInputRef } from "./create-task-input";
 import type { Task, TaskStatus } from "@/lib/tasks/types";
 import { TASK_STATUS_LABELS, TASK_STATUS_COLORS } from "@/lib/tasks/types";
 import { cn } from "@/lib/utils";
@@ -19,12 +20,8 @@ interface TaskColumnProps {
   onCreateTask: (title: string, status: TaskStatus) => void;
 }
 
-export function TaskColumn({
-  status,
-  tasks,
-  onTaskClick,
-  onCreateTask,
-}: TaskColumnProps) {
+export const TaskColumn = forwardRef<CreateTaskInputRef, TaskColumnProps>(
+  function TaskColumn({ status, tasks, onTaskClick, onCreateTask }, ref) {
   const { setNodeRef, isOver } = useDroppable({
     id: status,
     data: {
@@ -89,10 +86,11 @@ export function TaskColumn({
       {/* Create Task Input */}
       <div className="p-2 border-t">
         <CreateTaskInput
+          ref={ref}
           onCreateTask={(title) => onCreateTask(title, status)}
           placeholder={`Add to ${TASK_STATUS_LABELS[status].toLowerCase()}...`}
         />
       </div>
     </div>
   );
-}
+});

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
   DndContext,
@@ -22,11 +22,13 @@ import { TaskDialog } from "./task-dialog";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { Task, TaskStatus } from "@/lib/tasks/types";
 import { TASK_STATUSES } from "@/lib/tasks/types";
+import type { CreateTaskInputRef } from "./create-task-input";
 
 export function TaskBoard() {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const inboxInputRef = useRef<CreateTaskInputRef>(null);
 
   // Fetch all tasks from IndexedDB
   const tasks = useLiveQuery(() => db.tasks.orderBy("order").toArray(), []);
@@ -61,6 +63,24 @@ export function TaskBoard() {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts if user is typing in an input or textarea
+      const target = e.target as HTMLElement;
+      const isTyping = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
+      
+      // N: Create new task in inbox (only when not typing)
+      if (e.key === "n" && !isTyping && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+        e.preventDefault();
+        inboxInputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Create a new task
   const handleCreateTask = async (title: string, status: TaskStatus) => {
@@ -233,6 +253,7 @@ export function TaskBoard() {
             {TASK_STATUSES.map((status) => (
               <TaskColumn
                 key={status}
+                ref={status === "inbox" ? inboxInputRef : null}
                 status={status}
                 tasks={tasksByStatus[status]}
                 onTaskClick={handleTaskClick}

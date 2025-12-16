@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useImperativeHandle, forwardRef } from "react";
 import { Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -11,20 +11,28 @@ interface CreateTaskInputProps {
   className?: string;
 }
 
-export function CreateTaskInput({
-  onCreateTask,
-  placeholder = "Add a task...",
-  className,
-}: CreateTaskInputProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [title, setTitle] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+export interface CreateTaskInputRef {
+  focus: () => void;
+}
 
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [isEditing]);
+export const CreateTaskInput = forwardRef<CreateTaskInputRef, CreateTaskInputProps>(
+  function CreateTaskInput({ onCreateTask, placeholder = "Add a task...", className }, ref) {
+    const [isEditing, setIsEditing] = useState(false);
+    const [title, setTitle] = useState("");
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+      if (isEditing && inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, [isEditing]);
+
+    // Expose focus method to parent
+    useImperativeHandle(ref, () => ({
+      focus: () => {
+        setIsEditing(true);
+      },
+    }));
 
   const handleSubmit = () => {
     const trimmedTitle = title.trim();
@@ -76,4 +84,4 @@ export function CreateTaskInput({
       className={cn("h-9", className)}
     />
   );
-}
+});
