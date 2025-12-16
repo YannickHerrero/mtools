@@ -1,12 +1,32 @@
 # MTools
 
-A unified toolkit for work management and developer utilities.
+A unified toolkit for work management and developer utilities. All data is stored locally in your browser.
 
 ## Features
 
-### API Client (Postman Alternative)
+### Task Board
 
-A fully-featured API testing tool that runs locally in your browser:
+A Kanban-style board for managing your tasks:
+
+- **Five Columns** - Inbox, Todo, Doing, Done, and Archived
+- **Drag & Drop** - Reorder tasks within columns or move between columns
+- **Quick Capture** - Add tasks directly or via the command menu
+- **Task Details** - Click on any task to edit title and description
+- **Local Storage** - All tasks persisted locally using IndexedDB
+
+### Notes
+
+A minimal note-taking app with Markdown support:
+
+- **Markdown Editor** - Write in plain text with Markdown formatting
+- **Auto-save** - Notes automatically save after 3 seconds of inactivity
+- **Collections** - Organize notes into folders/collections
+- **Search** - Quickly find notes by title or content
+- **Word Count** - Track your writing progress in the footer
+
+### API Client
+
+A fully-featured API testing tool (Postman alternative):
 
 - **HTTP Methods** - Support for GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS
 - **Request Builder** - Query parameters, headers, and JSON body editor with auto-completion
@@ -15,19 +35,35 @@ A fully-featured API testing tool that runs locally in your browser:
 - **Local Storage** - All data persisted locally using IndexedDB (no cloud required)
 - **CORS Proxy** - Built-in proxy to test any external API without CORS issues
 
-### Task Board (Coming Soon)
+## Keyboard Shortcuts
 
-A Trello-like kanban board for personal task management.
+MTools uses a leader key system inspired by Vim. Press `Space` to activate leader mode.
 
-### Notes (Coming Soon)
+### Global
 
-A minimal note-taking app for quick capture.
+| Shortcut | Action |
+|----------|--------|
+| `Space` `Space` | Open Command Menu |
+| `Space` `t` | Go to Tasks |
+| `Space` `n` | Go to Notes |
+| `Space` `a` | Go to API Client |
+| `Escape` | Cancel leader mode |
+
+### Context-Aware
+
+| Shortcut | Action | Page |
+|----------|--------|------|
+| `Space` `o` | Create new note | Notes |
+| `Space` `s` | Focus search | Notes |
+| `Space` `o` | Create new task | Tasks |
+| `Cmd/Ctrl + S` | Save note | Notes |
 
 ## Tech Stack
 
-- **Framework**: Next.js 16 (App Router)
+- **Framework**: Next.js 15 (App Router)
 - **UI**: shadcn/ui + Tailwind CSS
 - **Database**: IndexedDB via Dexie.js
+- **Drag & Drop**: dnd-kit
 - **Theme**: Dark/Light/System mode support
 
 ## Getting Started

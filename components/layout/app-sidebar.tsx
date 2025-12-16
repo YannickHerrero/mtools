@@ -1,6 +1,6 @@
 "use client";
 
-import { KanbanSquare, StickyNote, Send } from "lucide-react";
+import { KanbanSquare, StickyNote, Send, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -70,7 +70,13 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border">
         <div className="flex items-center justify-between px-2 py-2">
-          <span className="text-xs text-muted-foreground">Theme</span>
+          <Link 
+            href="/help" 
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <HelpCircle className="h-3.5 w-3.5" />
+            <span>Help</span>
+          </Link>
           <ThemeToggle />
         </div>
       </SidebarFooter>
