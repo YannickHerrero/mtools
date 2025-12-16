@@ -3,8 +3,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { LeaderKeyProvider } from "@/components/providers/leader-key-provider";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { LeaderKeyIndicator } from "@/components/ui/leader-key-indicator";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,10 +40,13 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <SidebarProvider>
-            <AppSidebar />
-            <SidebarInset>
-              {children}
-            </SidebarInset>
+            <LeaderKeyProvider>
+              <AppSidebar />
+              <SidebarInset>
+                {children}
+              </SidebarInset>
+              <LeaderKeyIndicator />
+            </LeaderKeyProvider>
           </SidebarProvider>
         </ThemeProvider>
       </body>

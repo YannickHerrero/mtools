@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
   DndContext,
@@ -20,6 +20,7 @@ import { TaskColumn } from "./task-column";
 import { TaskCardOverlay } from "./task-card";
 import { TaskDialog } from "./task-dialog";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { useLeaderKeyContext } from "@/components/providers/leader-key-provider";
 import type { Task, TaskStatus } from "@/lib/tasks/types";
 import { TASK_STATUSES } from "@/lib/tasks/types";
 import type { CreateTaskInputRef } from "./create-task-input";
@@ -64,23 +65,26 @@ export function TaskBoard() {
     })
   );
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts if user is typing in an input or textarea
-      const target = e.target as HTMLElement;
-      const isTyping = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
-      
-      // N: Create new task in inbox (only when not typing)
-      if (e.key === "n" && !isTyping && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
-        e.preventDefault();
-        inboxInputRef.current?.focus();
-      }
-    };
+  // Register leader key context action for creating new task
+  const { registerContextActions } = useLeaderKeyContext();
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+  const focusInboxInput = useCallback(() => {
+    inboxInputRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    registerContextActions([
+      {
+        key: "o",
+        action: focusInboxInput,
+        label: "New Task",
+      },
+    ]);
+
+    return () => {
+      registerContextActions([]);
+    };
+  }, [registerContextActions, focusInboxInput]);
 
   // Create a new task
   const handleCreateTask = async (title: string, status: TaskStatus) => {

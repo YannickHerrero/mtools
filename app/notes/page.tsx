@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Save, Check, FileText } from "lucide-react";
+import { useLeaderKeyContext } from "@/components/providers/leader-key-provider";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -71,40 +72,54 @@ export default function NotesPage() {
     };
   }, [currentNote?.title, currentNote?.content, currentNote?.id]);
 
-  // Keyboard shortcuts
+  // Register leader key context actions for notes page
+  const { registerContextActions } = useLeaderKeyContext();
+
+  const createNewNote = useCallback(async () => {
+    const inboxId = await ensureInboxCollection();
+    const now = new Date();
+    const newNote = {
+      collectionId: inboxId,
+      title: "",
+      content: "",
+      createdAt: now,
+      updatedAt: now,
+    };
+    const id = await db.notes.add(newNote);
+    setCurrentNote({ ...newNote, id: id as number });
+
+    // Focus title input after state update
+    setTimeout(() => {
+      titleInputRef.current?.focus();
+    }, 0);
+  }, []);
+
+  const focusSearch = useCallback(() => {
+    document.querySelector<HTMLInputElement>('input[placeholder="Search notes..."]')?.focus();
+  }, []);
+
+  useEffect(() => {
+    registerContextActions([
+      {
+        key: "o",
+        action: createNewNote,
+        label: "New Note",
+      },
+      {
+        key: "s",
+        action: focusSearch,
+        label: "Search",
+      },
+    ]);
+
+    return () => {
+      registerContextActions([]);
+    };
+  }, [registerContextActions, createNewNote, focusSearch]);
+
+  // Keyboard shortcuts (Cmd/Ctrl only)
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
-      // Don't trigger shortcuts if user is typing in an input or textarea
-      const target = e.target as HTMLElement;
-      const isTyping = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
-      
-      // N: New note (only when not typing)
-      if (e.key === "n" && !isTyping && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
-        e.preventDefault();
-        const inboxId = await ensureInboxCollection();
-        const now = new Date();
-        const newNote = {
-          collectionId: inboxId,
-          title: "",
-          content: "",
-          createdAt: now,
-          updatedAt: now,
-        };
-        const id = await db.notes.add(newNote);
-        setCurrentNote({ ...newNote, id: id as number });
-        
-        // Focus title input after state update
-        setTimeout(() => {
-          titleInputRef.current?.focus();
-        }, 0);
-      }
-      
-      // Cmd/Ctrl + K: Focus search
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        document.querySelector<HTMLInputElement>('input[placeholder="Search notes..."]')?.focus();
-      }
-      
       // Cmd/Ctrl + S: Manual save (even though auto-save is enabled)
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
         e.preventDefault();
@@ -233,9 +248,11 @@ export default function NotesPage() {
                   <span>{characters} characters</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs">N</kbd>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs">Space</kbd>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs">o</kbd>
                   <span>New note</span>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs ml-2">⌘K</kbd>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs ml-2">Space</kbd>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs">s</kbd>
                   <span>Search</span>
                 </div>
               </div>
@@ -246,7 +263,8 @@ export default function NotesPage() {
               <h2 className="text-2xl font-semibold">No note selected</h2>
               <p className="text-muted-foreground">
                 Select a note from the sidebar or press{" "}
-                <kbd className="px-2 py-1 bg-muted rounded text-xs">N</kbd> to create a new one
+                <kbd className="px-2 py-1 bg-muted rounded text-xs">Space</kbd>{" "}
+                <kbd className="px-2 py-1 bg-muted rounded text-xs">o</kbd> to create a new one
               </p>
             </div>
           )}
