@@ -123,3 +123,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Inline code styling for markdown */
+.inline-code {
+  @apply bg-muted px-1.5 py-0.5 rounded text-sm font-mono;
+}
