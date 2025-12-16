@@ -281,7 +281,7 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
                     className="text-xs font-medium text-muted-foreground px-2 py-1.5 mt-2"
                   >
                     <Command.Item
-                      value="add-task"
+                      value="add new task"
                       onSelect={() => setMode("add-task")}
                       className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer text-sm aria-selected:bg-accent aria-selected:text-accent-foreground"
                     >
@@ -289,7 +289,7 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
                       <span>Add new task</span>
                     </Command.Item>
                     <Command.Item
-                      value="add-note"
+                      value="add new note"
                       onSelect={() => setMode("add-note")}
                       className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer text-sm aria-selected:bg-accent aria-selected:text-accent-foreground"
                     >
@@ -297,7 +297,7 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
                       <span>Add new note</span>
                     </Command.Item>
                     <Command.Item
-                      value="add-whiteboard"
+                      value="add new whiteboard"
                       onSelect={() => setMode("add-whiteboard")}
                       className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer text-sm aria-selected:bg-accent aria-selected:text-accent-foreground"
                     >
