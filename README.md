@@ -34,6 +34,18 @@ A drawing canvas powered by Excalidraw for sketches, diagrams, and visual thinki
 - **Search** - Quickly find whiteboards by title
 - **Theme Sync** - Canvas background automatically matches app theme (light/dark)
 
+### Bookmarks
+
+A bookmark manager to organize your favorite links:
+
+- **Categories** - Organize bookmarks into custom categories (Work, Code, Personal, etc.)
+- **Grid Layout** - Full-page view with responsive grid display
+- **Drag & Drop** - Reorder bookmarks within categories
+- **Favicons** - Automatically fetches website favicons
+- **Search** - Filter bookmarks by title, URL, or description
+- **Import/Export** - Backup and restore bookmarks as JSON
+- **Quick Access** - Search and open bookmarks directly from the command menu (opens in new window)
+
 ### API Client
 
 A fully-featured API testing tool (Postman alternative):
@@ -69,6 +81,7 @@ MTools uses a leader key system inspired by Vim. Press `Space` to activate leade
 | `Space` `t` | Go to Tasks |
 | `Space` `n` | Go to Notes |
 | `Space` `w` | Go to Whiteboard |
+| `Space` `b` | Go to Bookmarks |
 | `Space` `a` | Go to API Client |
 | `Space` `d` | Go to Database |
 | `Escape` | Cancel leader mode |
@@ -83,6 +96,9 @@ MTools uses a leader key system inspired by Vim. Press `Space` to activate leade
 | `Cmd/Ctrl + S` | Save note | Notes |
 | `Space` `o` | Create new whiteboard | Whiteboard |
 | `Space` `s` | Focus search | Whiteboard |
+| `Space` `o` | Add new bookmark | Bookmarks |
+| `Space` `c` | Add new category | Bookmarks |
+| `Space` `s` | Focus search | Bookmarks |
 
 ## Tech Stack
 

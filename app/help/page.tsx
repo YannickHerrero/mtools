@@ -1,6 +1,6 @@
 "use client";
 
-import { Keyboard, Navigation, Database, Layers, StickyNote, Send, HelpCircle, PenTool } from "lucide-react";
+import { Bookmark, Keyboard, Navigation, Database, Layers, StickyNote, Send, HelpCircle, PenTool } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -69,6 +69,10 @@ export default function HelpPage() {
                       <td className="px-4 py-2"><Kbd>Space</Kbd> <Kbd>d</Kbd></td>
                       <td className="px-4 py-2">Go to Database</td>
                     </tr>
+                    <tr className="border-b">
+                      <td className="px-4 py-2"><Kbd>Space</Kbd> <Kbd>b</Kbd></td>
+                      <td className="px-4 py-2">Go to Bookmarks</td>
+                    </tr>
                     <tr>
                       <td className="px-4 py-2"><Kbd>Escape</Kbd></td>
                       <td className="px-4 py-2">Cancel leader mode</td>
@@ -119,10 +123,25 @@ export default function HelpPage() {
                       <td className="px-4 py-2">Create new whiteboard</td>
                       <td className="px-4 py-2 text-muted-foreground">Whiteboard</td>
                     </tr>
-                    <tr>
+                    <tr className="border-b">
                       <td className="px-4 py-2"><Kbd>Space</Kbd> <Kbd>s</Kbd></td>
                       <td className="px-4 py-2">Focus search</td>
                       <td className="px-4 py-2 text-muted-foreground">Whiteboard</td>
+                    </tr>
+                    <tr className="border-b">
+                      <td className="px-4 py-2"><Kbd>Space</Kbd> <Kbd>o</Kbd></td>
+                      <td className="px-4 py-2">Add new bookmark</td>
+                      <td className="px-4 py-2 text-muted-foreground">Bookmarks</td>
+                    </tr>
+                    <tr className="border-b">
+                      <td className="px-4 py-2"><Kbd>Space</Kbd> <Kbd>c</Kbd></td>
+                      <td className="px-4 py-2">Add new category</td>
+                      <td className="px-4 py-2 text-muted-foreground">Bookmarks</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-2"><Kbd>Space</Kbd> <Kbd>s</Kbd></td>
+                      <td className="px-4 py-2">Focus search</td>
+                      <td className="px-4 py-2 text-muted-foreground">Bookmarks</td>
                     </tr>
                   </tbody>
                 </table>
@@ -256,6 +275,28 @@ export default function HelpPage() {
                 <li><strong>Collections:</strong> Organize whiteboards into collections and folders</li>
                 <li><strong>Search:</strong> Quickly find whiteboards by title</li>
                 <li><strong>Theme Sync:</strong> Canvas background automatically matches app theme</li>
+              </ul>
+            </div>
+
+            {/* Bookmarks */}
+            <div className="rounded-lg border p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center">
+                  <Bookmark className="h-4 w-4 text-primary" />
+                </div>
+                <h3 className="font-medium">Bookmarks</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                A bookmark manager to organize your favorite links by category:
+              </p>
+              <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                <li><strong>Categories:</strong> Organize bookmarks into custom categories (Work, Code, Personal, etc.)</li>
+                <li><strong>Grid Layout:</strong> Full-page view with responsive grid display</li>
+                <li><strong>Drag & Drop:</strong> Reorder bookmarks within categories</li>
+                <li><strong>Favicons:</strong> Automatically fetches website favicons</li>
+                <li><strong>Search:</strong> Filter bookmarks by title, URL, or description</li>
+                <li><strong>Import/Export:</strong> Backup and restore bookmarks as JSON</li>
+                <li><strong>Quick Access:</strong> Search and open bookmarks from the command menu</li>
               </ul>
             </div>
 
