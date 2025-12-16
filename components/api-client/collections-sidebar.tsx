@@ -42,6 +42,9 @@ interface CollectionsSidebarProps {
   currentRequestId?: number;
 }
 
+const STORAGE_KEY_COLLECTIONS = "api-client-expanded-collections";
+const STORAGE_KEY_FOLDERS = "api-client-expanded-folders";
+
 export function CollectionsSidebar({ onLoadRequest, currentRequestId }: CollectionsSidebarProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState("");
@@ -55,22 +58,71 @@ export function CollectionsSidebar({ onLoadRequest, currentRequestId }: Collecti
   const folders = useLiveQuery(() => db.folders.toArray());
   const requests = useLiveQuery(() => db.savedRequests.toArray());
 
-  // Track if we've done the initial expansion
-  const hasInitiallyExpanded = useRef(false);
+  // Track if we've done the initial load from localStorage
+  const hasInitialized = useRef(false);
 
-  // Expand all collections and folders on initial load
+  // Load expanded state from localStorage on initial mount
   useEffect(() => {
-    if (!hasInitiallyExpanded.current && collections && folders) {
-      const collectionIds = collections.map((c) => c.id!).filter(Boolean);
-      const folderIds = folders.map((f) => f.id!).filter(Boolean);
+    if (hasInitialized.current) return;
+    
+    try {
+      const savedCollections = localStorage.getItem(STORAGE_KEY_COLLECTIONS);
+      const savedFolders = localStorage.getItem(STORAGE_KEY_FOLDERS);
       
-      if (collectionIds.length > 0 || folderIds.length > 0) {
-        setExpandedCollections(new Set(collectionIds));
-        setExpandedFolders(new Set(folderIds));
-        hasInitiallyExpanded.current = true;
+      if (savedCollections || savedFolders) {
+        // Restore saved state
+        if (savedCollections) {
+          setExpandedCollections(new Set(JSON.parse(savedCollections)));
+        }
+        if (savedFolders) {
+          setExpandedFolders(new Set(JSON.parse(savedFolders)));
+        }
+        hasInitialized.current = true;
+      } else if (collections && folders) {
+        // First time: expand all collections and folders
+        const collectionIds = collections.map((c) => c.id!).filter(Boolean);
+        const folderIds = folders.map((f) => f.id!).filter(Boolean);
+        
+        if (collectionIds.length > 0 || folderIds.length > 0) {
+          setExpandedCollections(new Set(collectionIds));
+          setExpandedFolders(new Set(folderIds));
+          hasInitialized.current = true;
+        }
+      }
+    } catch {
+      // If localStorage fails, just expand all
+      if (collections && folders) {
+        const collectionIds = collections.map((c) => c.id!).filter(Boolean);
+        const folderIds = folders.map((f) => f.id!).filter(Boolean);
+        
+        if (collectionIds.length > 0 || folderIds.length > 0) {
+          setExpandedCollections(new Set(collectionIds));
+          setExpandedFolders(new Set(folderIds));
+          hasInitialized.current = true;
+        }
       }
     }
   }, [collections, folders]);
+
+  // Save expanded collections to localStorage when it changes
+  useEffect(() => {
+    if (!hasInitialized.current) return;
+    try {
+      localStorage.setItem(STORAGE_KEY_COLLECTIONS, JSON.stringify([...expandedCollections]));
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [expandedCollections]);
+
+  // Save expanded folders to localStorage when it changes
+  useEffect(() => {
+    if (!hasInitialized.current) return;
+    try {
+      localStorage.setItem(STORAGE_KEY_FOLDERS, JSON.stringify([...expandedFolders]));
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [expandedFolders]);
 
   const createCollection = async () => {
     if (!newCollectionName.trim()) return;

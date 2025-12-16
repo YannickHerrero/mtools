@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
   Plus,
@@ -47,6 +47,9 @@ interface NotesSidebarProps {
   searchQuery: string;
 }
 
+const STORAGE_KEY_COLLECTIONS = "notes-sidebar-expanded-collections";
+const STORAGE_KEY_FOLDERS = "notes-sidebar-expanded-folders";
+
 export function NotesSidebar({ onLoadNote, currentNoteId, searchQuery }: NotesSidebarProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState("");
@@ -54,21 +57,70 @@ export function NotesSidebar({ onLoadNote, currentNoteId, searchQuery }: NotesSi
   const [editingName, setEditingName] = useState("");
   const [expandedCollections, setExpandedCollections] = useState<Set<number>>(new Set());
   const [expandedFolders, setExpandedFolders] = useState<Set<number>>(new Set());
+  const hasInitialized = useRef(false);
 
   const collections = useLiveQuery(() => db.noteCollections.toArray());
   const folders = useLiveQuery(() => db.noteFolders.toArray());
   const notes = useLiveQuery(() => db.notes.toArray());
 
-  // Expand all collections and folders on initial load
+  // Load expanded state from localStorage on initial mount
   useEffect(() => {
-    if (collections && folders) {
-      const allCollectionIds = collections.map((c) => c.id).filter((id): id is number => id !== undefined);
-      const allFolderIds = folders.map((f) => f.id).filter((id): id is number => id !== undefined);
+    if (hasInitialized.current) return;
+    
+    try {
+      const savedCollections = localStorage.getItem(STORAGE_KEY_COLLECTIONS);
+      const savedFolders = localStorage.getItem(STORAGE_KEY_FOLDERS);
       
-      setExpandedCollections(new Set(allCollectionIds));
-      setExpandedFolders(new Set(allFolderIds));
+      if (savedCollections || savedFolders) {
+        // Restore saved state
+        if (savedCollections) {
+          setExpandedCollections(new Set(JSON.parse(savedCollections)));
+        }
+        if (savedFolders) {
+          setExpandedFolders(new Set(JSON.parse(savedFolders)));
+        }
+        hasInitialized.current = true;
+      } else if (collections && folders) {
+        // First time: expand all collections and folders
+        const allCollectionIds = collections.map((c) => c.id).filter((id): id is number => id !== undefined);
+        const allFolderIds = folders.map((f) => f.id).filter((id): id is number => id !== undefined);
+        
+        setExpandedCollections(new Set(allCollectionIds));
+        setExpandedFolders(new Set(allFolderIds));
+        hasInitialized.current = true;
+      }
+    } catch {
+      // If localStorage fails, just expand all
+      if (collections && folders) {
+        const allCollectionIds = collections.map((c) => c.id).filter((id): id is number => id !== undefined);
+        const allFolderIds = folders.map((f) => f.id).filter((id): id is number => id !== undefined);
+        
+        setExpandedCollections(new Set(allCollectionIds));
+        setExpandedFolders(new Set(allFolderIds));
+        hasInitialized.current = true;
+      }
     }
-  }, [collections?.length, folders?.length]); // Only run when counts change
+  }, [collections, folders]);
+
+  // Save expanded collections to localStorage when it changes
+  useEffect(() => {
+    if (!hasInitialized.current) return;
+    try {
+      localStorage.setItem(STORAGE_KEY_COLLECTIONS, JSON.stringify([...expandedCollections]));
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [expandedCollections]);
+
+  // Save expanded folders to localStorage when it changes
+  useEffect(() => {
+    if (!hasInitialized.current) return;
+    try {
+      localStorage.setItem(STORAGE_KEY_FOLDERS, JSON.stringify([...expandedFolders]));
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [expandedFolders]);
 
   // Filter notes based on search query
   const filteredNotes = notes?.filter((note) =>
