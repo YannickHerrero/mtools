@@ -136,7 +136,51 @@ export default function ApiClientPage() {
 
     try {
       const finalUrl = buildUrl();
-      const enabledHeaders = request.headers.filter((h) => h.enabled && h.key);
+      let enabledHeaders = request.headers.filter((h) => h.enabled && h.key);
+
+      // Apply collection-level authorization if present
+      if (request.collectionId) {
+        const collection = await db.collections.get(request.collectionId);
+        if (collection?.auth && collection.auth.type !== "none") {
+          if (collection.auth.type === "bearer" && collection.auth.bearer?.token) {
+            // Add Bearer token to headers
+            enabledHeaders = [
+              ...enabledHeaders,
+              {
+                id: crypto.randomUUID(),
+                key: "Authorization",
+                value: `Bearer ${collection.auth.bearer.token}`,
+                enabled: true,
+              },
+            ];
+          } else if (collection.auth.type === "basic" && collection.auth.basic) {
+            // Add Basic auth to headers
+            const credentials = btoa(`${collection.auth.basic.username}:${collection.auth.basic.password}`);
+            enabledHeaders = [
+              ...enabledHeaders,
+              {
+                id: crypto.randomUUID(),
+                key: "Authorization",
+                value: `Basic ${credentials}`,
+                enabled: true,
+              },
+            ];
+          } else if (collection.auth.type === "apiKey" && collection.auth.apiKey) {
+            if (collection.auth.apiKey.addTo === "header") {
+              // Add API key to headers
+              enabledHeaders = [
+                ...enabledHeaders,
+                {
+                  id: crypto.randomUUID(),
+                  key: collection.auth.apiKey.key,
+                  value: collection.auth.apiKey.value,
+                  enabled: true,
+                },
+              ];
+            }
+          }
+        }
+      }
 
       const proxyResponse = await fetch("/api/proxy", {
         method: "POST",

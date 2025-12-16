@@ -15,9 +15,11 @@ import {
   FilePlus,
   Download,
   Upload,
+  Key,
 } from "lucide-react";
 import { db } from "@/lib/db";
-import type { Collection, Folder as FolderType, SavedRequest, RequestState, ExportedCollection, ExportedFolder } from "@/lib/api-client/types";
+import type { Collection, Folder as FolderType, SavedRequest, RequestState, ExportedCollection, ExportedFolder, CollectionAuth } from "@/lib/api-client/types";
+import { CollectionAuthDialog } from "./collection-auth-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -47,6 +49,7 @@ export function CollectionsSidebar({ onLoadRequest, currentRequestId }: Collecti
   const [editingName, setEditingName] = useState("");
   const [expandedCollections, setExpandedCollections] = useState<Set<number>>(new Set());
   const [expandedFolders, setExpandedFolders] = useState<Set<number>>(new Set());
+  const [authDialogState, setAuthDialogState] = useState<{ open: boolean; collectionId: number; collectionName: string; currentAuth?: CollectionAuth } | null>(null);
 
   const collections = useLiveQuery(() => db.collections.toArray());
   const folders = useLiveQuery(() => db.folders.toArray());
@@ -212,6 +215,7 @@ export function CollectionsSidebar({ onLoadRequest, currentRequestId }: Collecti
       exportedAt: new Date().toISOString(),
       collection: {
         name: collection.name,
+        auth: collection.auth,
         folders: buildFolderTree(undefined),
         requests: collectionRequests
           .filter((r) => !r.folderId)
@@ -266,6 +270,7 @@ export function CollectionsSidebar({ onLoadRequest, currentRequestId }: Collecti
       // Create collection
       const collectionId = await db.collections.add({
         name: collectionName,
+        auth: data.collection.auth,
         createdAt: now,
         updatedAt: now,
       }) as number;
@@ -551,6 +556,10 @@ export function CollectionsSidebar({ onLoadRequest, currentRequestId }: Collecti
                   <Pencil className="h-4 w-4 mr-2" />
                   Rename
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setAuthDialogState({ open: true, collectionId: collection.id!, collectionName: collection.name, currentAuth: collection.auth })}>
+                  <Key className="h-4 w-4 mr-2" />
+                  Authorization
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => exportCollection(collection.id!)}>
                   <Download className="h-4 w-4 mr-2" />
                   Export
@@ -631,6 +640,16 @@ export function CollectionsSidebar({ onLoadRequest, currentRequestId }: Collecti
           )}
         </div>
       </ScrollArea>
+
+      {authDialogState && (
+        <CollectionAuthDialog
+          open={authDialogState.open}
+          onOpenChange={(open) => !open && setAuthDialogState(null)}
+          collectionId={authDialogState.collectionId}
+          collectionName={authDialogState.collectionName}
+          currentAuth={authDialogState.currentAuth}
+        />
+      )}
     </div>
   );
 }

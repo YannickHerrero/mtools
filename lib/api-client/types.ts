@@ -7,9 +7,28 @@ export interface KeyValue {
   enabled: boolean;
 }
 
+export type AuthType = 'none' | 'bearer' | 'basic' | 'apiKey';
+
+export interface CollectionAuth {
+  type: AuthType;
+  bearer?: {
+    token: string;
+  };
+  basic?: {
+    username: string;
+    password: string;
+  };
+  apiKey?: {
+    key: string;
+    value: string;
+    addTo: 'header' | 'query';
+  };
+}
+
 export interface Collection {
   id?: number;
   name: string;
+  auth?: CollectionAuth;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -89,6 +108,7 @@ export interface ExportedCollection {
   exportedAt: string;
   collection: {
     name: string;
+    auth?: CollectionAuth;
     folders: ExportedFolder[];
     requests: ExportedRequest[];
   };
