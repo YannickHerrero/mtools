@@ -22,7 +22,7 @@ export function LeaderKeyIndicator() {
         {shortcuts.map((shortcut) => (
           <div key={shortcut.key} className="flex items-center gap-2 text-sm">
             <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border bg-muted px-1.5 font-mono text-xs font-medium">
-              {shortcut.key}
+              {shortcut.key === " " ? "␣" : shortcut.key}
             </kbd>
             <span className="text-muted-foreground">{shortcut.label}</span>
           </div>

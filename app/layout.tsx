@@ -7,6 +7,7 @@ import { LeaderKeyProvider } from "@/components/providers/leader-key-provider";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { LeaderKeyIndicator } from "@/components/ui/leader-key-indicator";
+import { CommandMenuWrapper } from "@/components/ui/command-menu-wrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,6 +47,7 @@ export default function RootLayout({
                 {children}
               </SidebarInset>
               <LeaderKeyIndicator />
+              <CommandMenuWrapper />
             </LeaderKeyProvider>
           </SidebarProvider>
         </ThemeProvider>

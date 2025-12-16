@@ -16,6 +16,7 @@ export interface LeaderKeyShortcut {
 
 interface UseLeaderKeyOptions {
   contextActions?: LeaderKeyShortcut[];
+  onOpenCommandMenu?: () => void;
 }
 
 export function useLeaderKey(options: UseLeaderKeyOptions = {}) {
@@ -33,8 +34,17 @@ export function useLeaderKey(options: UseLeaderKeyOptions = {}) {
   // Context-aware shortcuts
   const contextActions = options.contextActions || [];
 
-  // All shortcuts combined
-  const shortcuts: LeaderKeyShortcut[] = [...navigationShortcuts, ...contextActions];
+  // Command menu shortcut (space + space)
+  const commandMenuShortcut: LeaderKeyShortcut | null = options.onOpenCommandMenu
+    ? { key: " ", action: options.onOpenCommandMenu, label: "Command Menu" }
+    : null;
+
+  // All shortcuts combined (command menu shortcut takes priority)
+  const shortcuts: LeaderKeyShortcut[] = [
+    ...(commandMenuShortcut ? [commandMenuShortcut] : []),
+    ...navigationShortcuts,
+    ...contextActions,
+  ];
 
   const resetState = useCallback(() => {
     setState("idle");

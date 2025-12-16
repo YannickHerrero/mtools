@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Save, Check, FileText } from "lucide-react";
 import { useLeaderKeyContext } from "@/components/providers/leader-key-provider";
 import {
@@ -17,12 +18,35 @@ import { db, ensureInboxCollection } from "@/lib/db";
 import type { Note } from "@/lib/notes/types";
 
 export default function NotesPage() {
+  return (
+    <Suspense fallback={<NotesPageSkeleton />}>
+      <NotesPageContent />
+    </Suspense>
+  );
+}
+
+function NotesPageSkeleton() {
+  return (
+    <div className="flex flex-col h-screen">
+      <div className="border-b px-4 py-2 flex items-center gap-2">
+        <h1 className="text-lg font-semibold">Notes</h1>
+      </div>
+      <div className="flex-1 flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    </div>
+  );
+}
+
+function NotesPageContent() {
+  const searchParams = useSearchParams();
   const [currentNote, setCurrentNote] = useState<Note | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "idle">("idle");
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const savedStatusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const hasLoadedFromParams = useRef(false);
 
   // Ensure Inbox collection exists
   useEffect(() => {
@@ -31,6 +55,22 @@ export default function NotesPage() {
     };
     initInbox();
   }, []);
+
+  // Load note from URL query param (e.g., from spotlight search)
+  useEffect(() => {
+    const noteId = searchParams.get("noteId");
+    if (noteId && !hasLoadedFromParams.current) {
+      hasLoadedFromParams.current = true;
+      const loadNote = async () => {
+        const note = await db.notes.get(parseInt(noteId, 10));
+        if (note) {
+          setCurrentNote(note);
+          setSaveStatus("idle");
+        }
+      };
+      loadNote();
+    }
+  }, [searchParams]);
 
   // Auto-save functionality with proper debouncing
   useEffect(() => {
