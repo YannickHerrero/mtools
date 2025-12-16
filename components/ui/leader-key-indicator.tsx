@@ -9,7 +9,7 @@ export function LeaderKeyIndicator() {
   return (
     <div
       className={cn(
-        "fixed bottom-4 right-4 z-50 rounded-lg border bg-background/95 p-3 shadow-lg backdrop-blur transition-all duration-200",
+        "fixed bottom-4 left-1/2 -translate-x-1/2 z-50 rounded-lg border bg-background/95 p-3 shadow-lg backdrop-blur transition-all duration-200",
         isLeaderActive
           ? "translate-y-0 opacity-100"
           : "pointer-events-none translate-y-2 opacity-0"
