@@ -2,7 +2,6 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
 import type { Task } from "@/lib/tasks/types";
 import { cn } from "@/lib/utils";
 
@@ -40,21 +39,16 @@ export function TaskCard({ task, onClick, isDragging }: TaskCardProps) {
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group flex items-center gap-2 p-3 bg-card border rounded-lg shadow-sm cursor-pointer",
+        "group p-3 bg-card border rounded-lg shadow-sm cursor-grab active:cursor-grabbing",
         "hover:shadow-md hover:border-primary/50 transition-all",
         isCurrentlyDragging && "opacity-50 shadow-lg rotate-2 scale-105",
         task.status === "archived" && "opacity-60"
       )}
       onClick={onClick}
+      {...attributes}
+      {...listeners}
     >
-      <button
-        className="touch-none p-1 -ml-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
-        {...attributes}
-        {...listeners}
-      >
-        <GripVertical className="h-4 w-4 text-muted-foreground" />
-      </button>
-      <span className="flex-1 text-sm font-medium truncate">{task.title}</span>
+      <span className="text-sm font-medium break-words">{task.title}</span>
     </div>
   );
 }
@@ -67,12 +61,11 @@ export function TaskCardOverlay({ task }: TaskCardOverlayProps) {
   return (
     <div
       className={cn(
-        "flex items-center gap-2 p-3 bg-card border rounded-lg shadow-lg cursor-grabbing",
+        "p-3 bg-card border rounded-lg shadow-lg cursor-grabbing",
         "rotate-3 scale-105"
       )}
     >
-      <GripVertical className="h-4 w-4 text-muted-foreground" />
-      <span className="flex-1 text-sm font-medium truncate">{task.title}</span>
+      <span className="text-sm font-medium break-words">{task.title}</span>
     </div>
   );
 }
