@@ -1,6 +1,6 @@
 "use client";
 
-import { KanbanSquare, StickyNote, Send, HelpCircle } from "lucide-react";
+import { KanbanSquare, StickyNote, Send, HelpCircle, Database } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -33,6 +33,11 @@ const navigation = [
     title: "API Client",
     href: "/api-client",
     icon: Send,
+  },
+  {
+    title: "Database",
+    href: "/database",
+    icon: Database,
   },
 ];
 

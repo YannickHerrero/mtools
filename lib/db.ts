@@ -2,6 +2,7 @@ import Dexie, { type EntityTable } from 'dexie';
 import type { Collection, Folder, SavedRequest, RequestHistory } from './api-client/types';
 import type { Task } from './tasks/types';
 import type { Note, NoteCollection, NoteFolder } from './notes/types';
+import type { DatabaseConnection } from './database/types';
 
 const db = new Dexie('mtools') as Dexie & {
   collections: EntityTable<Collection, 'id'>;
@@ -12,6 +13,7 @@ const db = new Dexie('mtools') as Dexie & {
   noteCollections: EntityTable<NoteCollection, 'id'>;
   noteFolders: EntityTable<NoteFolder, 'id'>;
   notes: EntityTable<Note, 'id'>;
+  databaseConnections: EntityTable<DatabaseConnection, 'id'>;
 };
 
 db.version(1).stores({
@@ -50,6 +52,19 @@ db.version(4).stores({
   noteCollections: '++id, name, isInbox, createdAt, updatedAt',
   noteFolders: '++id, collectionId, parentFolderId, name, createdAt, updatedAt',
   notes: '++id, collectionId, folderId, title, content, createdAt, updatedAt',
+});
+
+// Version 5: Add database connections table
+db.version(5).stores({
+  collections: '++id, name, createdAt, updatedAt',
+  folders: '++id, collectionId, parentFolderId, name, createdAt, updatedAt',
+  savedRequests: '++id, collectionId, folderId, name, method, url, createdAt, updatedAt',
+  requestHistory: '++id, method, url, executedAt',
+  tasks: '++id, status, order, createdAt, updatedAt',
+  noteCollections: '++id, name, isInbox, createdAt, updatedAt',
+  noteFolders: '++id, collectionId, parentFolderId, name, createdAt, updatedAt',
+  notes: '++id, collectionId, folderId, title, content, createdAt, updatedAt',
+  databaseConnections: '++id, name, provider, createdAt, updatedAt',
 });
 
 // History limit - keep only the last 100 entries
