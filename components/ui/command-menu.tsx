@@ -7,15 +7,18 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
+  Database,
   FileText,
   KanbanSquare,
   Send,
   StickyNote,
   Plus,
   Search,
+  PenTool,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import type { Note } from "@/lib/notes/types";
+import type { Whiteboard } from "@/lib/whiteboard/types";
 import { cn } from "@/lib/utils";
 
 interface CommandMenuProps {
@@ -33,6 +36,9 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
   // Fetch notes for search
   const notes = useLiveQuery(() => db.notes.toArray(), []);
 
+  // Fetch whiteboards for search
+  const whiteboards = useLiveQuery(() => db.whiteboards.toArray(), []);
+
   // Filter notes based on search query
   const filteredNotes = React.useMemo(() => {
     if (!notes || !search) return notes || [];
@@ -40,6 +46,14 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
       note.title.toLowerCase().includes(search.toLowerCase())
     );
   }, [notes, search]);
+
+  // Filter whiteboards based on search query
+  const filteredWhiteboards = React.useMemo(() => {
+    if (!whiteboards || !search) return whiteboards || [];
+    return whiteboards.filter((whiteboard) =>
+      whiteboard.title.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [whiteboards, search]);
 
   // Reset state when menu closes
   React.useEffect(() => {
@@ -60,6 +74,12 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
   const handleSelectNote = (note: Note) => {
     // Navigate to notes page with the note ID as a query param
     router.push(`/notes?noteId=${note.id}`);
+    onOpenChange(false);
+  };
+
+  const handleSelectWhiteboard = (whiteboard: Whiteboard) => {
+    // Navigate to whiteboard page with the whiteboard ID as a query param
+    router.push(`/whiteboard?whiteboardId=${whiteboard.id}`);
     onOpenChange(false);
   };
 
@@ -124,7 +144,7 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
           </VisuallyHidden.Root>
           <VisuallyHidden.Root asChild>
             <DialogPrimitive.Description>
-              Search notes, navigate to pages, or perform actions
+              Search notes and whiteboards, navigate to pages, or perform actions
             </DialogPrimitive.Description>
           </VisuallyHidden.Root>
 
@@ -136,7 +156,7 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
                   <Command.Input
                     value={search}
                     onValueChange={setSearch}
-                    placeholder="Search notes, navigate, or take actions..."
+                    placeholder="Search notes, whiteboards, navigate, or take actions..."
                     className="flex h-12 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </div>
@@ -173,6 +193,17 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
                       </kbd>
                     </Command.Item>
                     <Command.Item
+                      value="navigate-whiteboard"
+                      onSelect={() => handleNavigate("/whiteboard")}
+                      className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer text-sm aria-selected:bg-accent aria-selected:text-accent-foreground"
+                    >
+                      <PenTool className="h-4 w-4" />
+                      <span>Whiteboard</span>
+                      <kbd className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">
+                        w
+                      </kbd>
+                    </Command.Item>
+                    <Command.Item
                       value="navigate-api-client"
                       onSelect={() => handleNavigate("/api-client")}
                       className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer text-sm aria-selected:bg-accent aria-selected:text-accent-foreground"
@@ -181,6 +212,17 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
                       <span>API Client</span>
                       <kbd className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">
                         a
+                      </kbd>
+                    </Command.Item>
+                    <Command.Item
+                      value="navigate-database"
+                      onSelect={() => handleNavigate("/database")}
+                      className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer text-sm aria-selected:bg-accent aria-selected:text-accent-foreground"
+                    >
+                      <Database className="h-4 w-4" />
+                      <span>Database</span>
+                      <kbd className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">
+                        d
                       </kbd>
                     </Command.Item>
                   </Command.Group>
@@ -219,6 +261,31 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
                           </span>
                           <span className="ml-auto text-xs text-muted-foreground">
                             {new Date(note.updatedAt).toLocaleDateString()}
+                          </span>
+                        </Command.Item>
+                      ))}
+                    </Command.Group>
+                  )}
+
+                  {/* Whiteboards Section */}
+                  {filteredWhiteboards && filteredWhiteboards.length > 0 && (
+                    <Command.Group
+                      heading="Whiteboards"
+                      className="text-xs font-medium text-muted-foreground px-2 py-1.5 mt-2"
+                    >
+                      {filteredWhiteboards.slice(0, 10).map((whiteboard) => (
+                        <Command.Item
+                          key={whiteboard.id}
+                          value={`whiteboard-${whiteboard.id}-${whiteboard.title}`}
+                          onSelect={() => handleSelectWhiteboard(whiteboard)}
+                          className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer text-sm aria-selected:bg-accent aria-selected:text-accent-foreground"
+                        >
+                          <PenTool className="h-4 w-4" />
+                          <span className="truncate">
+                            {whiteboard.title || "Untitled"}
+                          </span>
+                          <span className="ml-auto text-xs text-muted-foreground">
+                            {new Date(whiteboard.updatedAt).toLocaleDateString()}
                           </span>
                         </Command.Item>
                       ))}

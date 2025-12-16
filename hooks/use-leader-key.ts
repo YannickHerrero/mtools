@@ -28,7 +28,9 @@ export function useLeaderKey(options: UseLeaderKeyOptions = {}) {
   const navigationShortcuts: LeaderKeyShortcut[] = [
     { key: "t", action: () => router.push("/tasks"), label: "Tasks" },
     { key: "n", action: () => router.push("/notes"), label: "Notes" },
+    { key: "w", action: () => router.push("/whiteboard"), label: "Whiteboard" },
     { key: "a", action: () => router.push("/api-client"), label: "API Client" },
+    { key: "d", action: () => router.push("/database"), label: "Database" },
   ];
 
   // Context-aware shortcuts
