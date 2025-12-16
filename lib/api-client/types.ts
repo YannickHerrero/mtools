@@ -67,3 +67,29 @@ export interface ResponseState {
   body: string;
   time: number;
 }
+
+// Export/Import types
+export interface ExportedRequest {
+  name: string;
+  method: HttpMethod;
+  url: string;
+  headers: Omit<KeyValue, 'id'>[];
+  params: Omit<KeyValue, 'id'>[];
+  body?: string;
+}
+
+export interface ExportedFolder {
+  name: string;
+  folders: ExportedFolder[];
+  requests: ExportedRequest[];
+}
+
+export interface ExportedCollection {
+  version: string;
+  exportedAt: string;
+  collection: {
+    name: string;
+    folders: ExportedFolder[];
+    requests: ExportedRequest[];
+  };
+}

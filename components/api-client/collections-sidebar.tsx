@@ -13,9 +13,11 @@ import {
   Pencil,
   FolderPlus,
   FilePlus,
+  Download,
+  Upload,
 } from "lucide-react";
 import { db } from "@/lib/db";
-import type { Collection, Folder as FolderType, SavedRequest, RequestState } from "@/lib/api-client/types";
+import type { Collection, Folder as FolderType, SavedRequest, RequestState, ExportedCollection, ExportedFolder } from "@/lib/api-client/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -175,6 +177,167 @@ export function CollectionsSidebar({ onLoadRequest, currentRequestId }: Collecti
       }
       return next;
     });
+  };
+
+  // Export collection to JSON file
+  const exportCollection = async (collectionId: number) => {
+    const collection = collections?.find((c) => c.id === collectionId);
+    if (!collection) return;
+
+    const collectionFolders = folders?.filter((f) => f.collectionId === collectionId) || [];
+    const collectionRequests = requests?.filter((r) => r.collectionId === collectionId) || [];
+
+    // Helper to build nested folder structure
+    const buildFolderTree = (parentFolderId?: number): ExportedFolder[] => {
+      return collectionFolders
+        .filter((f) => f.parentFolderId === parentFolderId)
+        .map((folder) => ({
+          name: folder.name,
+          folders: buildFolderTree(folder.id),
+          requests: collectionRequests
+            .filter((r) => r.folderId === folder.id)
+            .map((r) => ({
+              name: r.name,
+              method: r.method,
+              url: r.url,
+              headers: r.headers.map(({ key, value, enabled }) => ({ key, value, enabled })),
+              params: r.params.map(({ key, value, enabled }) => ({ key, value, enabled })),
+              body: r.body,
+            })),
+        }));
+    };
+
+    const exportData: ExportedCollection = {
+      version: "1.0",
+      exportedAt: new Date().toISOString(),
+      collection: {
+        name: collection.name,
+        folders: buildFolderTree(undefined),
+        requests: collectionRequests
+          .filter((r) => !r.folderId)
+          .map((r) => ({
+            name: r.name,
+            method: r.method,
+            url: r.url,
+            headers: r.headers.map(({ key, value, enabled }) => ({ key, value, enabled })),
+            params: r.params.map(({ key, value, enabled }) => ({ key, value, enabled })),
+            body: r.body,
+          })),
+      },
+    };
+
+    // Create and download file
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${collection.name.toLowerCase().replace(/\s+/g, "-")}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Import collection from JSON file
+  const importCollection = async (file: File) => {
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text) as ExportedCollection;
+
+      // Validate structure
+      if (!data.version || !data.collection || !data.collection.name) {
+        throw new Error("Invalid collection format: missing required fields");
+      }
+      if (!Array.isArray(data.collection.folders) || !Array.isArray(data.collection.requests)) {
+        throw new Error("Invalid collection format: folders and requests must be arrays");
+      }
+
+      // Check for duplicate name and generate unique name if needed
+      let collectionName = data.collection.name;
+      const existingNames = collections?.map((c) => c.name) || [];
+      let counter = 1;
+      while (existingNames.includes(collectionName)) {
+        counter++;
+        collectionName = `${data.collection.name} (${counter})`;
+      }
+
+      const now = new Date();
+
+      // Create collection
+      const collectionId = await db.collections.add({
+        name: collectionName,
+        createdAt: now,
+        updatedAt: now,
+      }) as number;
+
+      // Helper to import folders recursively
+      const importFolders = async (
+        exportedFolders: ExportedFolder[],
+        parentFolderId?: number
+      ) => {
+        for (const folder of exportedFolders) {
+          const folderId = await db.folders.add({
+            collectionId,
+            parentFolderId,
+            name: folder.name,
+            createdAt: now,
+            updatedAt: now,
+          }) as number;
+
+          // Import requests in this folder
+          for (const request of folder.requests) {
+            await db.savedRequests.add({
+              collectionId,
+              folderId,
+              name: request.name,
+              method: request.method,
+              url: request.url,
+              headers: request.headers.map((h) => ({ ...h, id: crypto.randomUUID() })),
+              params: request.params.map((p) => ({ ...p, id: crypto.randomUUID() })),
+              body: request.body,
+              createdAt: now,
+              updatedAt: now,
+            });
+          }
+
+          // Import nested folders
+          await importFolders(folder.folders, folderId);
+        }
+      };
+
+      // Import root folders
+      await importFolders(data.collection.folders);
+
+      // Import root requests (not in any folder)
+      for (const request of data.collection.requests) {
+        await db.savedRequests.add({
+          collectionId,
+          folderId: undefined,
+          name: request.name,
+          method: request.method,
+          url: request.url,
+          headers: request.headers.map((h) => ({ ...h, id: crypto.randomUUID() })),
+          params: request.params.map((p) => ({ ...p, id: crypto.randomUUID() })),
+          body: request.body,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+
+      // Expand the newly imported collection
+      setExpandedCollections((prev) => new Set([...prev, collectionId]));
+    } catch (error) {
+      alert(`Failed to import collection: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+  };
+
+  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      importCollection(file);
+      // Reset the input so the same file can be imported again if needed
+      event.target.value = "";
+    }
   };
 
   const renderFolder = (folder: FolderType, depth: number = 1) => {
@@ -388,6 +551,11 @@ export function CollectionsSidebar({ onLoadRequest, currentRequestId }: Collecti
                   <Pencil className="h-4 w-4 mr-2" />
                   Rename
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportCollection(collection.id!)}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => deleteCollection(collection.id!)}
                   className="text-destructive"
@@ -409,12 +577,33 @@ export function CollectionsSidebar({ onLoadRequest, currentRequestId }: Collecti
 
   return (
     <div className="flex flex-col h-full">
+      <input
+        type="file"
+        accept=".json"
+        onChange={handleFileImport}
+        className="hidden"
+        id="import-collection-input"
+      />
       <div className="p-2 border-b">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium">Collections</span>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsCreating(true)}>
-            <Plus className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setIsCreating(true)}>
+                <FolderPlus className="h-4 w-4 mr-2" />
+                New Collection
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => document.getElementById("import-collection-input")?.click()}>
+                <Upload className="h-4 w-4 mr-2" />
+                Import Collection
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         {isCreating && (
           <div className="flex gap-2">
