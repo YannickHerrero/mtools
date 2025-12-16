@@ -1,6 +1,6 @@
 "use client";
 
-import { Keyboard, Navigation, Database, Layers, StickyNote, Send, HelpCircle } from "lucide-react";
+import { Keyboard, Navigation, Database, Layers, StickyNote, Send, HelpCircle, PenTool } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -58,8 +58,16 @@ export default function HelpPage() {
                       <td className="px-4 py-2">Go to Notes</td>
                     </tr>
                     <tr className="border-b">
+                      <td className="px-4 py-2"><Kbd>Space</Kbd> <Kbd>w</Kbd></td>
+                      <td className="px-4 py-2">Go to Whiteboard</td>
+                    </tr>
+                    <tr className="border-b">
                       <td className="px-4 py-2"><Kbd>Space</Kbd> <Kbd>a</Kbd></td>
                       <td className="px-4 py-2">Go to API Client</td>
+                    </tr>
+                    <tr className="border-b">
+                      <td className="px-4 py-2"><Kbd>Space</Kbd> <Kbd>d</Kbd></td>
+                      <td className="px-4 py-2">Go to Database</td>
                     </tr>
                     <tr>
                       <td className="px-4 py-2"><Kbd>Escape</Kbd></td>
@@ -101,10 +109,20 @@ export default function HelpPage() {
                       <td className="px-4 py-2">Create new task</td>
                       <td className="px-4 py-2 text-muted-foreground">Tasks</td>
                     </tr>
-                    <tr>
+                    <tr className="border-b">
                       <td className="px-4 py-2"><Kbd>Cmd/Ctrl</Kbd> + <Kbd>S</Kbd></td>
                       <td className="px-4 py-2">Save note</td>
                       <td className="px-4 py-2 text-muted-foreground">Notes</td>
+                    </tr>
+                    <tr className="border-b">
+                      <td className="px-4 py-2"><Kbd>Space</Kbd> <Kbd>o</Kbd></td>
+                      <td className="px-4 py-2">Create new whiteboard</td>
+                      <td className="px-4 py-2 text-muted-foreground">Whiteboard</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-2"><Kbd>Space</Kbd> <Kbd>s</Kbd></td>
+                      <td className="px-4 py-2">Focus search</td>
+                      <td className="px-4 py-2 text-muted-foreground">Whiteboard</td>
                     </tr>
                   </tbody>
                 </table>
@@ -159,7 +177,7 @@ export default function HelpPage() {
               </p>
               <p>
                 <strong>Command Menu:</strong> Press <Kbd>Space</Kbd> <Kbd>Space</Kbd> to open the command menu. 
-                From there you can quickly navigate to any page, search for notes, or create new tasks.
+                From there you can quickly navigate to any page, search for notes and whiteboards, or create new tasks.
               </p>
               <p>
                 <strong>Leader Key Indicator:</strong> When you press <Kbd>Space</Kbd>, a floating indicator 
@@ -221,6 +239,26 @@ export default function HelpPage() {
               </ul>
             </div>
 
+            {/* Whiteboard */}
+            <div className="rounded-lg border p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center">
+                  <PenTool className="h-4 w-4 text-primary" />
+                </div>
+                <h3 className="font-medium">Whiteboard</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                A drawing canvas powered by Excalidraw for sketches, diagrams, and visual thinking:
+              </p>
+              <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                <li><strong>Drawing Tools:</strong> Shapes, arrows, text, freehand drawing, and more</li>
+                <li><strong>Auto-save:</strong> Whiteboards automatically save as you draw</li>
+                <li><strong>Collections:</strong> Organize whiteboards into collections and folders</li>
+                <li><strong>Search:</strong> Quickly find whiteboards by title</li>
+                <li><strong>Theme Sync:</strong> Canvas background automatically matches app theme</li>
+              </ul>
+            </div>
+
             {/* API Client */}
             <div className="rounded-lg border p-4 space-y-2">
               <div className="flex items-center gap-2">
@@ -238,6 +276,28 @@ export default function HelpPage() {
                 <li><strong>Collections:</strong> Save and organize requests into collections with nested folders</li>
                 <li><strong>History:</strong> Automatically saves your last 100 requests</li>
                 <li><strong>CORS Proxy:</strong> Built-in proxy to test external APIs without CORS issues</li>
+              </ul>
+            </div>
+
+            {/* Database Viewer */}
+            <div className="rounded-lg border p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center">
+                  <Database className="h-4 w-4 text-primary" />
+                </div>
+                <h3 className="font-medium">Database Viewer</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Browse and query your databases directly from the browser:
+              </p>
+              <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                <li><strong>Multiple Providers:</strong> PostgreSQL, MySQL, and MariaDB support</li>
+                <li><strong>Connection Manager:</strong> Save and manage multiple database connections</li>
+                <li><strong>SSH Tunneling:</strong> Connect securely through SSH tunnels</li>
+                <li><strong>Table Browser:</strong> View all tables with row counts</li>
+                <li><strong>Data Viewer:</strong> Browse table data with pagination, sorting, and filtering</li>
+                <li><strong>Schema Visualizer:</strong> View table schemas with column types and foreign keys</li>
+                <li><strong>Encrypted Storage:</strong> Passwords and SSH keys are encrypted locally</li>
               </ul>
             </div>
           </section>

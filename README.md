@@ -24,6 +24,16 @@ A minimal note-taking app with Markdown support:
 - **Search** - Quickly find notes by title or content
 - **Word Count** - Track your writing progress in the footer
 
+### Whiteboard
+
+A drawing canvas powered by Excalidraw for sketches, diagrams, and visual thinking:
+
+- **Drawing Tools** - Shapes, arrows, text, freehand drawing, and more
+- **Auto-save** - Whiteboards automatically save as you draw
+- **Collections** - Organize whiteboards into collections and folders
+- **Search** - Quickly find whiteboards by title
+- **Theme Sync** - Canvas background automatically matches app theme (light/dark)
+
 ### API Client
 
 A fully-featured API testing tool (Postman alternative):
@@ -34,6 +44,18 @@ A fully-featured API testing tool (Postman alternative):
 - **Request History** - Automatically saves last 100 requests for quick access
 - **Local Storage** - All data persisted locally using IndexedDB (no cloud required)
 - **CORS Proxy** - Built-in proxy to test any external API without CORS issues
+
+### Database Viewer
+
+Browse and query your databases directly from the browser:
+
+- **Multiple Providers** - PostgreSQL, MySQL, and MariaDB support
+- **Connection Manager** - Save and manage multiple database connections
+- **SSH Tunneling** - Connect securely through SSH tunnels
+- **Table Browser** - View all tables with row counts
+- **Data Viewer** - Browse table data with pagination, sorting, and filtering
+- **Schema Visualizer** - View table schemas with column types and foreign keys
+- **Encrypted Storage** - Passwords and SSH keys are encrypted locally
 
 ## Keyboard Shortcuts
 
@@ -46,7 +68,9 @@ MTools uses a leader key system inspired by Vim. Press `Space` to activate leade
 | `Space` `Space` | Open Command Menu |
 | `Space` `t` | Go to Tasks |
 | `Space` `n` | Go to Notes |
+| `Space` `w` | Go to Whiteboard |
 | `Space` `a` | Go to API Client |
+| `Space` `d` | Go to Database |
 | `Escape` | Cancel leader mode |
 
 ### Context-Aware
@@ -57,6 +81,8 @@ MTools uses a leader key system inspired by Vim. Press `Space` to activate leade
 | `Space` `s` | Focus search | Notes |
 | `Space` `o` | Create new task | Tasks |
 | `Cmd/Ctrl + S` | Save note | Notes |
+| `Space` `o` | Create new whiteboard | Whiteboard |
+| `Space` `s` | Focus search | Whiteboard |
 
 ## Tech Stack
 
