@@ -31,6 +31,7 @@ export function useLeaderKey(options: UseLeaderKeyOptions = {}) {
     { key: "w", action: () => router.push("/whiteboard"), label: "Whiteboard" },
     { key: "a", action: () => router.push("/api-client"), label: "API Client" },
     { key: "d", action: () => router.push("/database"), label: "Database" },
+    { key: "b", action: () => router.push("/bookmarks"), label: "Bookmarks" },
   ];
 
   // Context-aware shortcuts

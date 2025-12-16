@@ -1,6 +1,6 @@
 "use client";
 
-import { KanbanSquare, StickyNote, Send, HelpCircle, Database, PenTool } from "lucide-react";
+import { Bookmark, KanbanSquare, StickyNote, Send, HelpCircle, Database, PenTool } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -33,6 +33,11 @@ const navigation = [
     title: "Whiteboard",
     href: "/whiteboard",
     icon: PenTool,
+  },
+  {
+    title: "Bookmarks",
+    href: "/bookmarks",
+    icon: Bookmark,
   },
   {
     title: "API Client",

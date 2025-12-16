@@ -7,7 +7,9 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
+  Bookmark,
   Database,
+  ExternalLink,
   FileText,
   KanbanSquare,
   Send,
@@ -19,6 +21,7 @@ import {
 import { db, ensureInboxCollection, ensureWhiteboardInboxCollection } from "@/lib/db";
 import type { Note } from "@/lib/notes/types";
 import type { Whiteboard } from "@/lib/whiteboard/types";
+import type { Bookmark as BookmarkType } from "@/lib/bookmarks/types";
 import { cn } from "@/lib/utils";
 
 interface CommandMenuProps {
@@ -41,6 +44,9 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
   // Fetch whiteboards for search
   const whiteboards = useLiveQuery(() => db.whiteboards.toArray(), []);
 
+  // Fetch bookmarks for search
+  const bookmarks = useLiveQuery(() => db.bookmarks.toArray(), []);
+
   // Filter notes based on search query
   const filteredNotes = React.useMemo(() => {
     if (!notes || !search) return notes || [];
@@ -56,6 +62,17 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
       whiteboard.title.toLowerCase().includes(search.toLowerCase())
     );
   }, [whiteboards, search]);
+
+  // Filter bookmarks based on search query
+  const filteredBookmarks = React.useMemo(() => {
+    if (!bookmarks || !search) return bookmarks || [];
+    const query = search.toLowerCase();
+    return bookmarks.filter(
+      (bookmark) =>
+        bookmark.title.toLowerCase().includes(query) ||
+        bookmark.url.toLowerCase().includes(query)
+    );
+  }, [bookmarks, search]);
 
   // Reset state when menu closes
   React.useEffect(() => {
@@ -84,6 +101,12 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
   const handleSelectWhiteboard = (whiteboard: Whiteboard) => {
     // Navigate to whiteboard page with the whiteboard ID as a query param
     router.push(`/whiteboard?whiteboardId=${whiteboard.id}`);
+    onOpenChange(false);
+  };
+
+  const handleSelectBookmark = (bookmark: BookmarkType) => {
+    // Open bookmark URL in a new window
+    window.open(bookmark.url, "_blank", "noopener,noreferrer");
     onOpenChange(false);
   };
 
@@ -273,6 +296,17 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
                         d
                       </kbd>
                     </Command.Item>
+                    <Command.Item
+                      value="navigate-bookmarks"
+                      onSelect={() => handleNavigate("/bookmarks")}
+                      className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer text-sm aria-selected:bg-accent aria-selected:text-accent-foreground"
+                    >
+                      <Bookmark className="h-4 w-4" />
+                      <span>Bookmarks</span>
+                      <kbd className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">
+                        b
+                      </kbd>
+                    </Command.Item>
                   </Command.Group>
 
                   {/* Actions Section */}
@@ -350,6 +384,31 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
                           </span>
                           <span className="ml-auto text-xs text-muted-foreground">
                             {new Date(whiteboard.updatedAt).toLocaleDateString()}
+                          </span>
+                        </Command.Item>
+                      ))}
+                    </Command.Group>
+                  )}
+
+                  {/* Bookmarks Section */}
+                  {filteredBookmarks && filteredBookmarks.length > 0 && (
+                    <Command.Group
+                      heading="Bookmarks"
+                      className="text-xs font-medium text-muted-foreground px-2 py-1.5 mt-2"
+                    >
+                      {filteredBookmarks.slice(0, 10).map((bookmark) => (
+                        <Command.Item
+                          key={bookmark.id}
+                          value={`bookmark-${bookmark.id}-${bookmark.title}-${bookmark.url}`}
+                          onSelect={() => handleSelectBookmark(bookmark)}
+                          className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer text-sm aria-selected:bg-accent aria-selected:text-accent-foreground"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          <span className="truncate">
+                            {bookmark.title}
+                          </span>
+                          <span className="ml-auto text-xs text-muted-foreground truncate max-w-[150px]">
+                            {bookmark.url}
                           </span>
                         </Command.Item>
                       ))}
