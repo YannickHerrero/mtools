@@ -105,8 +105,8 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
   };
 
   const handleSelectBookmark = (bookmark: BookmarkType) => {
-    // Open bookmark URL in a new window
-    window.open(bookmark.url, "_blank", "noopener,noreferrer");
+    // Open bookmark URL in app mode
+    window.open(bookmark.url, "_blank", "popup,noopener,noreferrer");
     onOpenChange(false);
   };
 
