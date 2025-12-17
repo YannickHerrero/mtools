@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { KeyRound, Lock, ChevronRight } from "lucide-react";
 import { useLeaderKeyContext } from "@/components/providers/leader-key-provider";
 import {
@@ -9,12 +9,21 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { db } from "@/lib/db";
-import type { KeePassDatabase, KeePassEntry, KeePassGroup, UnlockedDatabase } from "@/lib/keepass/types";
+import type { KeePassDatabase, KeePassEntry, KeePassGroup, UnlockedDatabase, QuickUnlockDuration } from "@/lib/keepass/types";
+import { AUTO_LOCK_TIMEOUT_MS } from "@/lib/keepass/types";
 import { openDatabase, extractGroups, extractEntries } from "@/lib/keepass/kdbx-utils";
+import {
+  createQuickUnlockSession,
+  unlockWithPin,
+  hasQuickUnlockSession,
+  deleteQuickUnlockSession,
+  cleanupExpiredSessions,
+} from "@/lib/keepass/quick-unlock";
 import { KeePassSidebar } from "@/components/keepass/keepass-sidebar";
 import { EntryList } from "@/components/keepass/entry-list";
 import { EntryDetails } from "@/components/keepass/entry-details";
 import { UnlockDialog } from "@/components/keepass/unlock-dialog";
+import { PinUnlockDialog } from "@/components/keepass/pin-unlock-dialog";
 import { AddDatabaseDialog } from "@/components/keepass/add-database-dialog";
 
 export default function KeePassPage() {
@@ -32,12 +41,71 @@ export default function KeePassPage() {
 
   // Dialog state
   const [unlockDialogOpen, setUnlockDialogOpen] = useState(false);
+  const [pinUnlockDialogOpen, setPinUnlockDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  // Quick unlock state
+  const [hasQuickUnlock, setHasQuickUnlock] = useState(false);
+
+  // Auto-lock timer
+  const lastActivityRef = useRef<number>(0);
+  const autoLockIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const { registerContextActions } = useLeaderKeyContext();
 
   // Get current unlocked database
   const currentUnlockedDb = selectedDatabaseId ? unlockedDatabases.get(selectedDatabaseId) : null;
+
+  // Cleanup expired sessions on mount and initialize activity timer
+  useEffect(() => {
+    cleanupExpiredSessions();
+    lastActivityRef.current = Date.now();
+  }, []);
+
+  // Check for quick unlock session when database is selected
+  useEffect(() => {
+    if (selectedDatabaseId) {
+      hasQuickUnlockSession(selectedDatabaseId).then(setHasQuickUnlock);
+    } else {
+      setHasQuickUnlock(false);
+    }
+  }, [selectedDatabaseId]);
+
+  // Auto-lock timer - checks every minute
+  useEffect(() => {
+    // Reset activity on user interactions
+    const resetActivity = () => {
+      lastActivityRef.current = Date.now();
+    };
+
+    // Listen for user activity
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
+    events.forEach(event => {
+      document.addEventListener(event, resetActivity, { passive: true });
+    });
+
+    // Check for inactivity every minute
+    autoLockIntervalRef.current = setInterval(() => {
+      const inactiveTime = Date.now() - lastActivityRef.current;
+      if (inactiveTime >= AUTO_LOCK_TIMEOUT_MS && unlockedDatabases.size > 0) {
+        // Auto-lock all databases
+        setUnlockedDatabases(new Map());
+        setGroups([]);
+        setEntries([]);
+        setSelectedGroupUuid(null);
+        setSelectedEntry(null);
+      }
+    }, 60000); // Check every minute
+
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, resetActivity);
+      });
+      if (autoLockIntervalRef.current) {
+        clearInterval(autoLockIntervalRef.current);
+      }
+    };
+  }, [unlockedDatabases.size]);
 
   // Update groups and entries when unlocked database changes
   useEffect(() => {
@@ -58,6 +126,23 @@ export default function KeePassPage() {
     }
   }, [currentUnlockedDb, selectedGroupUuid]);
 
+  // Handle database lock
+  const handleLockDatabase = useCallback((id: number) => {
+    setUnlockedDatabases((prev) => {
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
+    });
+
+    // Clear entry state if this was the selected database
+    if (id === selectedDatabaseId) {
+      setGroups([]);
+      setEntries([]);
+      setSelectedGroupUuid(null);
+      setSelectedEntry(null);
+    }
+  }, [selectedDatabaseId]);
+
   // Register leader key shortcuts
   const focusSearch = useCallback(() => {
     document.querySelector<HTMLInputElement>('input[placeholder="Search entries..."]')?.focus();
@@ -71,7 +156,7 @@ export default function KeePassPage() {
     if (selectedDatabaseId) {
       handleLockDatabase(selectedDatabaseId);
     }
-  }, [selectedDatabaseId]);
+  }, [selectedDatabaseId, handleLockDatabase]);
 
   useEffect(() => {
     registerContextActions([
@@ -89,14 +174,26 @@ export default function KeePassPage() {
     setSelectedEntry(null);
     setSearchQuery("");
 
-    // If database is not unlocked, show unlock dialog
+    // Check for quick unlock session
+    const hasSession = await hasQuickUnlockSession(database.id!);
+    setHasQuickUnlock(hasSession);
+
+    // If database is not unlocked, show appropriate dialog
     if (!unlockedDatabases.has(database.id!)) {
-      setUnlockDialogOpen(true);
+      if (hasSession) {
+        setPinUnlockDialogOpen(true);
+      } else {
+        setUnlockDialogOpen(true);
+      }
     }
   };
 
-  // Handle database unlock
-  const handleUnlock = async (password: string, keyFileData?: ArrayBuffer) => {
+  // Handle database unlock with master password
+  const handleUnlock = async (
+    password: string,
+    keyFileData?: ArrayBuffer,
+    quickUnlockOptions?: { pin: string; duration: QuickUnlockDuration }
+  ) => {
     if (!selectedDatabase) return;
 
     const kdbx = await openDatabase(
@@ -121,23 +218,61 @@ export default function KeePassPage() {
     await db.keepassDatabases.update(selectedDatabase.id!, {
       lastOpened: new Date(),
     });
+
+    // Create quick unlock session if requested
+    if (quickUnlockOptions) {
+      await createQuickUnlockSession(
+        selectedDatabase.id!,
+        password,
+        quickUnlockOptions.pin,
+        quickUnlockOptions.duration
+      );
+      setHasQuickUnlock(true);
+    }
+
+    // Reset activity timer on successful unlock
+    lastActivityRef.current = Date.now();
   };
 
-  // Handle database lock
-  const handleLockDatabase = (id: number) => {
+  // Handle database unlock with PIN
+  const handleUnlockWithPin = async (pin: string) => {
+    if (!selectedDatabase) return;
+
+    const password = await unlockWithPin(selectedDatabase.id!, pin);
+
+    const kdbx = await openDatabase(
+      selectedDatabase.fileData,
+      password,
+      selectedDatabase.keyFileData
+    );
+
+    const unlockedDb: UnlockedDatabase = {
+      id: selectedDatabase.id!,
+      name: selectedDatabase.name,
+      db: kdbx,
+    };
+
     setUnlockedDatabases((prev) => {
       const next = new Map(prev);
-      next.delete(id);
+      next.set(selectedDatabase.id!, unlockedDb);
       return next;
     });
 
-    // Clear entry state if this was the selected database
-    if (id === selectedDatabaseId) {
-      setGroups([]);
-      setEntries([]);
-      setSelectedGroupUuid(null);
-      setSelectedEntry(null);
-    }
+    // Update last opened time
+    await db.keepassDatabases.update(selectedDatabase.id!, {
+      lastOpened: new Date(),
+    });
+
+    setPinUnlockDialogOpen(false);
+
+    // Reset activity timer on successful unlock
+    lastActivityRef.current = Date.now();
+  };
+
+  // Handle switching from PIN to master password
+  const handleUseMasterPassword = () => {
+    setPinUnlockDialogOpen(false);
+    setUnlockDialogOpen(true);
   };
 
   // Handle database deletion
@@ -146,6 +281,9 @@ export default function KeePassPage() {
     if (unlockedDatabases.has(id)) {
       handleLockDatabase(id);
     }
+
+    // Delete quick unlock session
+    await deleteQuickUnlockSession(id);
 
     // Delete from IndexedDB
     await db.keepassDatabases.delete(id);
@@ -209,6 +347,11 @@ export default function KeePassPage() {
                 Locked
               </span>
             )}
+            {hasQuickUnlock && !currentUnlockedDb && (
+              <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded">
+                PIN enabled
+              </span>
+            )}
           </>
         )}
       </div>
@@ -241,10 +384,16 @@ export default function KeePassPage() {
                 Database is locked
               </p>
               <button
-                onClick={() => setUnlockDialogOpen(true)}
+                onClick={() => {
+                  if (hasQuickUnlock) {
+                    setPinUnlockDialogOpen(true);
+                  } else {
+                    setUnlockDialogOpen(true);
+                  }
+                }}
                 className="text-sm text-primary hover:underline"
               >
-                Click to unlock
+                {hasQuickUnlock ? "Enter PIN to unlock" : "Click to unlock"}
               </button>
             </div>
           ) : (
@@ -279,8 +428,9 @@ export default function KeePassPage() {
               <Lock className="h-16 w-16 text-muted-foreground" />
               <h2 className="text-2xl font-semibold">Database locked</h2>
               <p className="text-muted-foreground text-center max-w-md">
-                Enter your master password to unlock the database and access your
-                passwords.
+                {hasQuickUnlock
+                  ? "Enter your PIN to quickly unlock the database."
+                  : "Enter your master password to unlock the database and access your passwords."}
               </p>
             </div>
           ) : (
@@ -310,6 +460,14 @@ export default function KeePassPage() {
         onOpenChange={setUnlockDialogOpen}
         database={selectedDatabase}
         onUnlock={handleUnlock}
+      />
+
+      <PinUnlockDialog
+        open={pinUnlockDialogOpen}
+        onOpenChange={setPinUnlockDialogOpen}
+        database={selectedDatabase}
+        onUnlockWithPin={handleUnlockWithPin}
+        onUseMasterPassword={handleUseMasterPassword}
       />
 
       <AddDatabaseDialog
