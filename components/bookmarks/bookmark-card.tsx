@@ -47,7 +47,7 @@ export function BookmarkCard({ bookmark, onEdit, onDelete }: BookmarkCardProps) 
   const faviconUrl = getFaviconUrl(bookmark.url, bookmark.favicon);
 
   const handleClick = () => {
-    window.open(bookmark.url, "_blank", "noopener,noreferrer");
+    window.open(bookmark.url, "_blank", "popup,noopener,noreferrer");
   };
 
   return (
