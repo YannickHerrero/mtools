@@ -1,40 +1,84 @@
 "use client";
 
-import { useRef, useCallback, useMemo, useState } from "react";
-import { getCellDisplayValue } from "@/lib/excel/parser";
-import type { Sheet, Cell } from "@/lib/excel/types";
+import { useRef, useCallback, useMemo, useState, useEffect } from "react";
+import { getCellDisplayValue, parseSheet } from "@/lib/excel/parser";
+import { Loader2 } from "lucide-react";
+import type { Sheet, Cell, SheetMetadata } from "@/lib/excel/types";
 import { cn } from "@/lib/utils";
 
 interface SheetViewerProps {
-  sheet: Sheet;
+  fileData: ArrayBuffer;
+  sheetMetadata: SheetMetadata;
+  sheetIndex: number;
+  loadedSheet?: Sheet;
+  onSheetLoaded: (sheetIndex: number, sheet: Sheet) => void;
 }
 
 const ROW_HEIGHT = 24;
 const CELL_MIN_WIDTH = 50;
 const CELL_MAX_WIDTH = 250;
 const VISIBLE_ROWS_BUFFER = 5;
+const VISIBLE_COLS_BUFFER = 3;
 
-export function SheetViewer({ sheet }: SheetViewerProps) {
+export function SheetViewer({ fileData, sheetMetadata, sheetIndex, loadedSheet, onSheetLoaded }: SheetViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [visibleRowRange, setVisibleRowRange] = useState({ start: 0, end: 50 });
+  const [visibleColRange, setVisibleColRange] = useState({ start: 0, end: 20 });
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Reset state when sheet index changes
+  useEffect(() => {
+    setIsLoading(false);
+    setVisibleRowRange({ start: 0, end: 50 });
+    setVisibleColRange({ start: 0, end: 20 });
+  }, [sheetIndex]);
+
+  // Load sheet data lazily
+  useEffect(() => {
+    if (!loadedSheet && !isLoading) {
+      console.log('Loading sheet:', sheetMetadata.name);
+      setIsLoading(true);
+      parseSheet(fileData, sheetMetadata.name)
+        .then((sheet) => {
+          console.log('Sheet loaded:', sheetMetadata.name, sheet);
+          onSheetLoaded(sheetIndex, sheet);
+          setIsLoading(false);
+        })
+        .catch((error) => {
+          console.error('Failed to load sheet:', error);
+          setIsLoading(false);
+        });
+    }
+  }, [fileData, sheetMetadata.name, sheetIndex, loadedSheet, onSheetLoaded, isLoading]);
+
+  // Cleanup effect - reset visible ranges when component unmounts
+  useEffect(() => {
+    return () => {
+      // Reset visible ranges to trigger garbage collection
+      setVisibleRowRange({ start: 0, end: 0 });
+      setVisibleColRange({ start: 0, end: 0 });
+    };
+  }, []);
 
   // Calculate column widths
   const columnWidths = useMemo(() => {
-    if (!sheet.rows || sheet.rows.length === 0) return [CELL_MIN_WIDTH];
+    if (!loadedSheet?.rows || loadedSheet.rows.length === 0) {
+      return new Array(sheetMetadata.columnCount).fill(CELL_MIN_WIDTH);
+    }
 
     const maxCols = Math.max(
-      ...sheet.rows.map((r) => r.cells.length),
-      sheet.columnWidths?.length || 0,
-      1 // Ensure at least 1 column
+      ...loadedSheet.rows.map((r) => r.cells.length),
+      loadedSheet.columnWidths?.length || 0,
+      sheetMetadata.columnCount
     );
 
     const widths = new Array(maxCols).fill(CELL_MIN_WIDTH);
 
     // Use predefined column widths if available
-    if (sheet.columnWidths) {
-      for (let i = 0; i < sheet.columnWidths.length; i++) {
-        const colWidth = sheet.columnWidths[i];
+    if (loadedSheet.columnWidths) {
+      for (let i = 0; i < loadedSheet.columnWidths.length; i++) {
+        const colWidth = loadedSheet.columnWidths[i];
         widths[i] = Math.max(
           CELL_MIN_WIDTH,
           Math.min(typeof colWidth === 'number' && !isNaN(colWidth) ? colWidth : CELL_MIN_WIDTH, CELL_MAX_WIDTH)
@@ -42,12 +86,12 @@ export function SheetViewer({ sheet }: SheetViewerProps) {
       }
     }
 
-    // Auto-adjust column widths based on content
-    for (let colIdx = 0; colIdx < maxCols; colIdx++) {
+    // Auto-adjust column widths based on content (only visible columns)
+    for (let colIdx = visibleColRange.start; colIdx < Math.min(visibleColRange.end, maxCols); colIdx++) {
       let maxWidth = widths[colIdx];
 
-      for (let rowIdx = 0; rowIdx < Math.min(sheet.rows.length, 100); rowIdx++) {
-        const cell = sheet.rows[rowIdx]?.cells[colIdx];
+      for (let rowIdx = 0; rowIdx < Math.min(loadedSheet.rows.length, 100); rowIdx++) {
+        const cell = loadedSheet.rows[rowIdx]?.cells[colIdx];
         if (cell) {
           const text = getCellDisplayValue(cell);
           const estimatedWidth = Math.min(
@@ -62,7 +106,7 @@ export function SheetViewer({ sheet }: SheetViewerProps) {
     }
 
     return widths;
-  }, [sheet.columnWidths, sheet.rows]);
+  }, [loadedSheet?.columnWidths, loadedSheet?.rows, sheetMetadata.columnCount, visibleColRange]);
 
   // Calculate cumulative column positions for total width
   const columnPositions = useMemo(() => {
@@ -73,29 +117,67 @@ export function SheetViewer({ sheet }: SheetViewerProps) {
     return positions;
   }, [columnWidths]);
 
-  // Handle scroll (vertical virtual scrolling)
+  // Handle scroll (both vertical and horizontal virtual scrolling)
   const handleScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
-      const scrollTop = e.currentTarget.scrollTop;
-      const containerHeight = e.currentTarget.clientHeight;
+      if (!loadedSheet) return;
 
-      // Account for header height in scroll calculations
+      const scrollTop = e.currentTarget.scrollTop;
+      const scrollLeft = e.currentTarget.scrollLeft;
+      const containerHeight = e.currentTarget.clientHeight;
+      const containerWidth = e.currentTarget.clientWidth;
+
+      // Vertical scrolling
       const adjustedScrollTop = Math.max(0, scrollTop - ROW_HEIGHT);
       const startRow = Math.max(0, Math.floor(adjustedScrollTop / ROW_HEIGHT) - VISIBLE_ROWS_BUFFER);
       const endRow = Math.ceil((adjustedScrollTop + containerHeight) / ROW_HEIGHT) + VISIBLE_ROWS_BUFFER;
 
       setVisibleRowRange({
         start: startRow,
-        end: Math.min(endRow, sheet.rows.length),
+        end: Math.min(endRow, loadedSheet.rows.length),
       });
+
+      // Horizontal scrolling
+      let startCol = 0;
+      let endCol = columnWidths.length;
+
+      // Find start column
+      for (let i = 0; i < columnPositions.length; i++) {
+        if (columnPositions[i] + columnWidths[i] >= scrollLeft) {
+          startCol = Math.max(0, i - VISIBLE_COLS_BUFFER);
+          break;
+        }
+      }
+
+      // Find end column
+      for (let i = startCol; i < columnPositions.length; i++) {
+        if (columnPositions[i] >= scrollLeft + containerWidth) {
+          endCol = Math.min(i + VISIBLE_COLS_BUFFER, columnWidths.length);
+          break;
+        }
+      }
+
+      setVisibleColRange({ start: startCol, end: endCol });
     },
-    [sheet.rows.length]
+    [loadedSheet, columnWidths, columnPositions]
   );
 
-  const visibleRows = sheet.rows.slice(visibleRowRange.start, visibleRowRange.end);
-  const totalHeight = sheet.rows.length * ROW_HEIGHT;
+  if (isLoading || !loadedSheet) {
+    return (
+      <div className="h-full w-full flex items-center justify-center">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Loading sheet...</span>
+        </div>
+      </div>
+    );
+  }
+
+  const visibleRows = loadedSheet.rows.slice(visibleRowRange.start, visibleRowRange.end);
+  const totalHeight = loadedSheet.rows.length * ROW_HEIGHT;
   const totalWidth = columnPositions[columnPositions.length - 1] + (columnWidths[columnWidths.length - 1] || 0);
   const offsetTop = visibleRowRange.start * ROW_HEIGHT;
+  const offsetLeft = columnPositions[visibleColRange.start] || 0;
 
   return (
     <div
@@ -116,14 +198,20 @@ export function SheetViewer({ sheet }: SheetViewerProps) {
           >
             {/* Row number header */}
             <div
-              className="flex items-center justify-center bg-muted/70 border-r font-semibold text-xs text-muted-foreground flex-shrink-0"
+              className="flex items-center justify-center bg-muted/70 border-r font-semibold text-xs text-muted-foreground flex-shrink-0 sticky left-0 z-20"
               style={{ width: 40, height: ROW_HEIGHT }}
             >
               #
             </div>
 
-            {/* Column headers */}
-            {columnWidths.map((width, colIdx) => {
+            {/* Spacer for columns before visible range */}
+            {visibleColRange.start > 0 && (
+              <div style={{ width: offsetLeft, flexShrink: 0 }} />
+            )}
+
+            {/* Column headers (only visible) */}
+            {columnWidths.slice(visibleColRange.start, visibleColRange.end).map((width, idx) => {
+              const colIdx = visibleColRange.start + idx;
               const columnLetter = String.fromCharCode(65 + (colIdx % 26));
               const columnLabel =
                 colIdx < 26
@@ -151,17 +239,24 @@ export function SheetViewer({ sheet }: SheetViewerProps) {
               const absoluteRowIdx = visibleRowRange.start + relativeIdx;
               return (
                 <div key={`row-${absoluteRowIdx}`} className="flex border-b">
-                  {/* Row number */}
+                  {/* Row number (sticky) */}
                   <div
-                    className="flex items-center justify-center bg-muted/20 border-r text-xs text-muted-foreground flex-shrink-0"
+                    className="flex items-center justify-center bg-muted/20 border-r text-xs text-muted-foreground flex-shrink-0 sticky left-0 z-10"
                     style={{ width: 40, height: ROW_HEIGHT }}
                   >
                     {absoluteRowIdx + 1}
                   </div>
 
-                  {/* Cells */}
-                  {columnWidths.map((width, colIdx) => {
+                  {/* Spacer for columns before visible range */}
+                  {visibleColRange.start > 0 && (
+                    <div style={{ width: offsetLeft, flexShrink: 0 }} />
+                  )}
+
+                  {/* Cells (only visible) */}
+                  {columnWidths.slice(visibleColRange.start, visibleColRange.end).map((width, idx) => {
+                    const colIdx = visibleColRange.start + idx;
                     const cell = row.cells[colIdx];
+                    
                     if (!cell) {
                       return (
                         <div
