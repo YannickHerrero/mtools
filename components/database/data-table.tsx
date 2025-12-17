@@ -27,7 +27,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type {
   DatabaseConnection,
   TableInfo,
@@ -339,6 +339,7 @@ export function DataTable({ connection, table }: DataTableProps) {
                 </tbody>
               </table>
             </div>
+            <ScrollBar orientation="horizontal" />
           </ScrollArea>
         )}
       </div>
