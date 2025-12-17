@@ -28,9 +28,16 @@ export interface Sheet {
   frozenColumns?: number;
 }
 
+export interface SheetMetadata {
+  name: string;
+  rowCount: number;
+  columnCount: number;
+}
+
 export interface ParsedExcelFile {
   fileName: string;
-  sheets: Sheet[];
+  fileData: ArrayBuffer; // Store raw file data for lazy parsing
+  sheetMetadata: SheetMetadata[]; // Just metadata, not full sheets
   uploadedAt: Date;
 }
 

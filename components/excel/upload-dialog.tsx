@@ -48,10 +48,10 @@ export function UploadDialog({
         );
       }
 
-      // Parse the file
+      // Parse the file (only metadata, not full sheets)
       const parsedFile = await parseExcelFile(file);
       
-      if (parsedFile.sheets.length === 0) {
+      if (parsedFile.sheetMetadata.length === 0) {
         throw new Error("File contains no sheets");
       }
 
