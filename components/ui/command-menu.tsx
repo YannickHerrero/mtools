@@ -17,6 +17,7 @@ import {
   Plus,
   Search,
   PenTool,
+  FileSpreadsheet,
 } from "lucide-react";
 import { db, ensureInboxCollection, ensureWhiteboardInboxCollection } from "@/lib/db";
 import type { Note } from "@/lib/notes/types";
@@ -296,18 +297,29 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
                         d
                       </kbd>
                     </Command.Item>
-                    <Command.Item
-                      value="navigate-bookmarks"
-                      onSelect={() => handleNavigate("/bookmarks")}
-                      className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer text-sm aria-selected:bg-accent aria-selected:text-accent-foreground"
-                    >
-                      <Bookmark className="h-4 w-4" />
-                      <span>Bookmarks</span>
-                      <kbd className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">
-                        b
-                      </kbd>
-                    </Command.Item>
-                  </Command.Group>
+                     <Command.Item
+                       value="navigate-bookmarks"
+                       onSelect={() => handleNavigate("/bookmarks")}
+                       className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer text-sm aria-selected:bg-accent aria-selected:text-accent-foreground"
+                     >
+                       <Bookmark className="h-4 w-4" />
+                       <span>Bookmarks</span>
+                       <kbd className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">
+                         b
+                       </kbd>
+                     </Command.Item>
+                     <Command.Item
+                       value="navigate-excel"
+                       onSelect={() => handleNavigate("/excel")}
+                       className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer text-sm aria-selected:bg-accent aria-selected:text-accent-foreground"
+                     >
+                       <FileSpreadsheet className="h-4 w-4" />
+                       <span>Excel</span>
+                       <kbd className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">
+                         e
+                       </kbd>
+                     </Command.Item>
+                   </Command.Group>
 
                   {/* Actions Section */}
                   <Command.Group

@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, KanbanSquare, StickyNote, Send, HelpCircle, Database, PenTool, KeyRound } from "lucide-react";
+import { Bookmark, KanbanSquare, StickyNote, Send, HelpCircle, Database, PenTool, KeyRound, FileSpreadsheet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -53,6 +53,11 @@ const navigation = [
     title: "Database",
     href: "/database",
     icon: Database,
+  },
+  {
+    title: "Excel",
+    href: "/excel",
+    icon: FileSpreadsheet,
   },
 ];
 
