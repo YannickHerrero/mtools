@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
   Send,
@@ -96,6 +97,28 @@ const createDefaultRequest = (): RequestState & {
 });
 
 export default function ApiClientPage() {
+  return (
+    <Suspense fallback={<ApiClientPageSkeleton />}>
+      <ApiClientPageContent />
+    </Suspense>
+  );
+}
+
+function ApiClientPageSkeleton() {
+  return (
+    <div className="flex flex-col h-screen">
+      <div className="border-b px-4 py-2 flex items-center gap-2">
+        <h1 className="text-lg font-semibold">API Client</h1>
+      </div>
+      <div className="flex-1 flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    </div>
+  );
+}
+
+function ApiClientPageContent() {
+  const searchParams = useSearchParams();
   const [request, setRequest] = useState(createDefaultRequest());
   const [response, setResponse] = useState<ResponseState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -104,11 +127,39 @@ export default function ApiClientPage() {
   const [responseHeadersOpen, setResponseHeadersOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [responseTab, setResponseTab] = useState<"response" | "request">("response");
+  const hasLoadedFromParams = useRef(false);
 
   const history = useLiveQuery(
     () => db.requestHistory.orderBy("executedAt").reverse().limit(50).toArray(),
     []
   );
+
+  // Load request from URL query param (e.g., from command menu search)
+  useEffect(() => {
+    const requestId = searchParams.get("requestId");
+    if (requestId && !hasLoadedFromParams.current) {
+      hasLoadedFromParams.current = true;
+      const loadRequest = async () => {
+        const savedRequest = await db.savedRequests.get(parseInt(requestId, 10));
+        if (savedRequest) {
+          setRequest({
+            id: savedRequest.id,
+            name: savedRequest.name,
+            collectionId: savedRequest.collectionId,
+            folderId: savedRequest.folderId,
+            method: savedRequest.method,
+            url: savedRequest.url,
+            headers: savedRequest.headers,
+            params: savedRequest.params,
+            body: savedRequest.body || "",
+          });
+          setResponse(null);
+          setExecutedRequest(null);
+        }
+      };
+      loadRequest();
+    }
+  }, [searchParams]);
 
   const buildUrl = useCallback(() => {
     if (!request.url) return "";

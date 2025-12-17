@@ -23,6 +23,7 @@ import { db, ensureInboxCollection, ensureWhiteboardInboxCollection } from "@/li
 import type { Note } from "@/lib/notes/types";
 import type { Whiteboard } from "@/lib/whiteboard/types";
 import type { Bookmark as BookmarkType } from "@/lib/bookmarks/types";
+import type { SavedRequest, Collection } from "@/lib/api-client/types";
 import { cn } from "@/lib/utils";
 
 interface CommandMenuProps {
@@ -47,6 +48,10 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
 
   // Fetch bookmarks for search
   const bookmarks = useLiveQuery(() => db.bookmarks.toArray(), []);
+
+  // Fetch saved requests (queries) and collections for search
+  const savedRequests = useLiveQuery(() => db.savedRequests.toArray(), []);
+  const collections = useLiveQuery(() => db.collections.toArray(), []);
 
   // Filter notes based on search query
   const filteredNotes = React.useMemo(() => {
@@ -74,6 +79,34 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
         bookmark.url.toLowerCase().includes(query)
     );
   }, [bookmarks, search]);
+
+  // Build queries with collection names for display and filtering
+  const queriesWithCollections = React.useMemo(() => {
+    if (!savedRequests || !collections) return [];
+    
+    return savedRequests
+      .map((request) => {
+        const collection = collections.find((c) => c.id === request.collectionId);
+        // Skip orphaned queries (queries without a collection)
+        if (!collection) return null;
+        
+        return {
+          ...request,
+          collectionName: collection.name,
+          displayName: `${collection.name}>${request.name}`,
+        };
+      })
+      .filter((q): q is NonNullable<typeof q> => q !== null);
+  }, [savedRequests, collections]);
+
+  // Filter queries based on search query
+  const filteredQueries = React.useMemo(() => {
+    if (!queriesWithCollections || !search) return queriesWithCollections || [];
+    const query = search.toLowerCase();
+    return queriesWithCollections.filter((queryItem) =>
+      queryItem.displayName.toLowerCase().includes(query)
+    );
+  }, [queriesWithCollections, search]);
 
   // Reset state when menu closes
   React.useEffect(() => {
@@ -108,6 +141,12 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
   const handleSelectBookmark = (bookmark: BookmarkType) => {
     // Open bookmark URL in app mode
     window.open(bookmark.url, "_blank", "popup,noopener,noreferrer");
+    onOpenChange(false);
+  };
+
+  const handleSelectQuery = (query: SavedRequest) => {
+    // Navigate to API client page with the request ID as a query param
+    router.push(`/api-client?requestId=${query.id}`);
     onOpenChange(false);
   };
 
@@ -216,7 +255,7 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
           </VisuallyHidden.Root>
           <VisuallyHidden.Root asChild>
             <DialogPrimitive.Description>
-              Search notes and whiteboards, navigate to pages, or perform actions
+              Search notes, queries, whiteboards, navigate to pages, or perform actions
             </DialogPrimitive.Description>
           </VisuallyHidden.Root>
 
@@ -351,6 +390,42 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
                       <span>Add new whiteboard</span>
                     </Command.Item>
                   </Command.Group>
+
+                  {/* Queries Section */}
+                  {filteredQueries && filteredQueries.length > 0 && (
+                    <Command.Group
+                      heading="Queries"
+                      className="text-xs font-medium text-muted-foreground px-2 py-1.5 mt-2"
+                    >
+                      {filteredQueries.slice(0, 10).map((query) => (
+                        <Command.Item
+                          key={query.id}
+                          value={`query-${query.id}-${query.displayName}`}
+                          onSelect={() => handleSelectQuery(query)}
+                          className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer text-sm aria-selected:bg-accent aria-selected:text-accent-foreground"
+                        >
+                          <Send className="h-4 w-4" />
+                          <span
+                            className={cn(
+                              "text-xs font-mono px-1 rounded shrink-0",
+                              query.method === "GET" && "bg-green-500/10 text-green-500",
+                              query.method === "POST" && "bg-blue-500/10 text-blue-500",
+                              query.method === "PUT" && "bg-orange-500/10 text-orange-500",
+                              query.method === "PATCH" && "bg-yellow-500/10 text-yellow-500",
+                              query.method === "DELETE" && "bg-red-500/10 text-red-500",
+                              query.method === "HEAD" && "bg-purple-500/10 text-purple-500",
+                              query.method === "OPTIONS" && "bg-gray-500/10 text-gray-500"
+                            )}
+                          >
+                            {query.method}
+                          </span>
+                          <span className="truncate">
+                            {query.displayName}
+                          </span>
+                        </Command.Item>
+                      ))}
+                    </Command.Group>
+                  )}
 
                   {/* Notes Section */}
                   {filteredNotes && filteredNotes.length > 0 && (
