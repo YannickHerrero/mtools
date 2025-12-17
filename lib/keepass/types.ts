@@ -49,6 +49,33 @@ export interface AddDatabaseInput {
   keyFile?: File;
 }
 
+// Quick unlock session stored in IndexedDB
+export interface QuickUnlockSession {
+  id?: number;
+  databaseId: number;               // Reference to KeePassDatabase.id
+  encryptedPassword: ArrayBuffer;   // Master password encrypted with PIN-derived key
+  salt: ArrayBuffer;                // Random salt used for key derivation
+  iv: ArrayBuffer;                  // Initialization vector for AES-GCM
+  expiresAt: Date;                  // When this session expires
+  failedAttempts: number;           // Counter for failed PIN attempts (max 5)
+  createdAt: Date;
+}
+
+// Duration options for quick unlock
+export type QuickUnlockDuration = '1_week' | '2_weeks' | '1_month';
+
+export const QUICK_UNLOCK_DURATIONS: Record<QuickUnlockDuration, { label: string; days: number }> = {
+  '1_week': { label: '1 week', days: 7 },
+  '2_weeks': { label: '2 weeks', days: 14 },
+  '1_month': { label: '1 month', days: 30 },
+};
+
+// Constants for quick unlock
+export const QUICK_UNLOCK_MAX_ATTEMPTS = 5;
+export const QUICK_UNLOCK_PIN_MIN_LENGTH = 4;
+export const QUICK_UNLOCK_PIN_MAX_LENGTH = 6;
+export const AUTO_LOCK_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+
 // Standard KeePass icons (subset of commonly used ones)
 export const KEEPASS_ICONS: Record<number, string> = {
   0: "key",           // Key

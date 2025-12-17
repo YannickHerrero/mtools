@@ -5,7 +5,7 @@ import type { Note, NoteCollection, NoteFolder } from './notes/types';
 import type { DatabaseConnection } from './database/types';
 import type { Whiteboard, WhiteboardCollection, WhiteboardFolder } from './whiteboard/types';
 import type { Bookmark, BookmarkCategory } from './bookmarks/types';
-import type { KeePassDatabase } from './keepass/types';
+import type { KeePassDatabase, QuickUnlockSession } from './keepass/types';
 
 const db = new Dexie('mtools') as Dexie & {
   collections: EntityTable<Collection, 'id'>;
@@ -23,6 +23,7 @@ const db = new Dexie('mtools') as Dexie & {
   bookmarkCategories: EntityTable<BookmarkCategory, 'id'>;
   bookmarks: EntityTable<Bookmark, 'id'>;
   keepassDatabases: EntityTable<KeePassDatabase, 'id'>;
+  quickUnlockSessions: EntityTable<QuickUnlockSession, 'id'>;
 };
 
 db.version(1).stores({
@@ -127,6 +128,26 @@ db.version(8).stores({
   bookmarkCategories: '++id, name, order, createdAt, updatedAt',
   bookmarks: '++id, categoryId, title, url, order, createdAt, updatedAt',
   keepassDatabases: '++id, name, fileName, createdAt, updatedAt',
+});
+
+// Version 9: Add quick unlock sessions table for "keep me logged in" feature
+db.version(9).stores({
+  collections: '++id, name, createdAt, updatedAt',
+  folders: '++id, collectionId, parentFolderId, name, createdAt, updatedAt',
+  savedRequests: '++id, collectionId, folderId, name, method, url, createdAt, updatedAt',
+  requestHistory: '++id, method, url, executedAt',
+  tasks: '++id, status, order, createdAt, updatedAt',
+  noteCollections: '++id, name, isInbox, createdAt, updatedAt',
+  noteFolders: '++id, collectionId, parentFolderId, name, createdAt, updatedAt',
+  notes: '++id, collectionId, folderId, title, content, createdAt, updatedAt',
+  databaseConnections: '++id, name, provider, createdAt, updatedAt',
+  whiteboardCollections: '++id, name, isInbox, createdAt, updatedAt',
+  whiteboardFolders: '++id, collectionId, parentFolderId, name, createdAt, updatedAt',
+  whiteboards: '++id, collectionId, folderId, title, createdAt, updatedAt',
+  bookmarkCategories: '++id, name, order, createdAt, updatedAt',
+  bookmarks: '++id, categoryId, title, url, order, createdAt, updatedAt',
+  keepassDatabases: '++id, name, fileName, createdAt, updatedAt',
+  quickUnlockSessions: '++id, databaseId, expiresAt, createdAt',
 });
 
 // History limit - keep only the last 100 entries
