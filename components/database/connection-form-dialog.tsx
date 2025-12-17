@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Loader2, Database, KeyRound } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Loader2, Database, KeyRound, Upload, FileText, X, AlertCircle, CheckCircle2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -47,6 +47,23 @@ const DEFAULT_SSH_TUNNEL: SSHTunnelInput = {
   passphrase: "",
 };
 
+// PEM validation patterns for various private key formats
+const PEM_PATTERNS = [
+  /-----BEGIN OPENSSH PRIVATE KEY-----[\s\S]+-----END OPENSSH PRIVATE KEY-----/,
+  /-----BEGIN RSA PRIVATE KEY-----[\s\S]+-----END RSA PRIVATE KEY-----/,
+  /-----BEGIN DSA PRIVATE KEY-----[\s\S]+-----END DSA PRIVATE KEY-----/,
+  /-----BEGIN EC PRIVATE KEY-----[\s\S]+-----END EC PRIVATE KEY-----/,
+  /-----BEGIN PRIVATE KEY-----[\s\S]+-----END PRIVATE KEY-----/,
+  /-----BEGIN ENCRYPTED PRIVATE KEY-----[\s\S]+-----END ENCRYPTED PRIVATE KEY-----/,
+];
+
+function isValidPemKey(content: string): boolean {
+  const trimmed = content.trim();
+  return PEM_PATTERNS.some((pattern) => pattern.test(trimmed));
+}
+
+type KeyInputMode = "paste" | "upload";
+
 export function ConnectionFormDialog({
   open,
   onOpenChange,
@@ -70,6 +87,10 @@ export function ConnectionFormDialog({
   const [testError, setTestError] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("connection");
+  const [keyInputMode, setKeyInputMode] = useState<KeyInputMode>("paste");
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [pemValidationError, setPemValidationError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleProviderChange = (provider: DatabaseProvider) => {
     setFormData({
@@ -87,6 +108,74 @@ export function ConnectionFormDialog({
         ...updates,
       },
     });
+  };
+
+  // Reset form when editConnection changes or dialog opens/closes
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        name: editConnection?.name || "",
+        provider: editConnection?.provider || "postgresql",
+        host: editConnection?.host || "localhost",
+        port: editConnection?.port || DEFAULT_PORTS[editConnection?.provider || "postgresql"],
+        database: editConnection?.database || "",
+        username: editConnection?.username || "",
+        password: editConnection?.password || "",
+        sslEnabled: editConnection?.sslEnabled ?? false,
+        sshTunnel: editConnection?.sshTunnel
+          ? { ...editConnection.sshTunnel }
+          : { ...DEFAULT_SSH_TUNNEL },
+      });
+      setKeyInputMode("paste");
+      setUploadedFileName(null);
+      setPemValidationError(null);
+      setTestStatus("idle");
+      setTestError("");
+      setActiveTab("connection");
+    }
+  }, [open, editConnection]);
+
+  const handlePrivateKeyChange = (value: string) => {
+    updateSSHTunnel({ privateKey: value });
+    if (value && !isValidPemKey(value)) {
+      setPemValidationError("Invalid PEM format. The key should start with '-----BEGIN ... PRIVATE KEY-----'");
+    } else {
+      setPemValidationError(null);
+    }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      if (isValidPemKey(content)) {
+        updateSSHTunnel({ privateKey: content });
+        setUploadedFileName(file.name);
+        setPemValidationError(null);
+      } else {
+        setPemValidationError("Invalid PEM file. The file does not contain a valid private key.");
+        setUploadedFileName(null);
+      }
+    };
+    reader.onerror = () => {
+      setPemValidationError("Failed to read the file. Please try again.");
+      setUploadedFileName(null);
+    };
+    reader.readAsText(file);
+    
+    // Reset file input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveUploadedFile = () => {
+    updateSSHTunnel({ privateKey: "" });
+    setUploadedFileName(null);
+    setPemValidationError(null);
   };
 
   const handleTestConnection = async () => {
@@ -128,21 +217,7 @@ export function ConnectionFormDialog({
     try {
       await onSave(formData);
       onOpenChange(false);
-      // Reset form
-      setFormData({
-        name: "",
-        provider: "postgresql",
-        host: "localhost",
-        port: DEFAULT_PORTS.postgresql,
-        database: "",
-        username: "",
-        password: "",
-        sslEnabled: false,
-        sshTunnel: { ...DEFAULT_SSH_TUNNEL },
-      });
-      setTestStatus("idle");
-      setTestError("");
-      setActiveTab("connection");
+      // Form reset is handled by useEffect when dialog closes
     } catch (error) {
       console.error("Failed to save connection:", error);
     } finally {
@@ -163,7 +238,8 @@ export function ConnectionFormDialog({
     (formData.sshTunnel.host &&
       formData.sshTunnel.port &&
       formData.sshTunnel.username &&
-      formData.sshTunnel.privateKey);
+      formData.sshTunnel.privateKey &&
+      !pemValidationError);
 
   const isValid = isDbValid && isSshValid;
 
@@ -345,14 +421,86 @@ export function ConnectionFormDialog({
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="privateKey">Private Key (PEM format)</Label>
-                    <Textarea
-                      id="privateKey"
-                      value={formData.sshTunnel?.privateKey || ""}
-                      onChange={(e) => updateSSHTunnel({ privateKey: e.target.value })}
-                      placeholder={"-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----"}
-                      className="font-mono text-xs h-40 resize-none"
-                    />
+                    <Label>Private Key (PEM format)</Label>
+                    
+                    {/* Key input mode tabs */}
+                    <Tabs value={keyInputMode} onValueChange={(v) => setKeyInputMode(v as KeyInputMode)} className="w-full">
+                      <TabsList className="grid w-full grid-cols-2 h-8">
+                        <TabsTrigger value="paste" className="text-xs gap-1.5">
+                          <FileText className="h-3 w-3" />
+                          Paste Key
+                        </TabsTrigger>
+                        <TabsTrigger value="upload" className="text-xs gap-1.5">
+                          <Upload className="h-3 w-3" />
+                          Upload File
+                        </TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="paste" className="mt-2">
+                        <Textarea
+                          id="privateKey"
+                          value={formData.sshTunnel?.privateKey || ""}
+                          onChange={(e) => handlePrivateKeyChange(e.target.value)}
+                          placeholder={"-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----"}
+                          className="font-mono text-xs h-32 resize-none"
+                        />
+                      </TabsContent>
+                      
+                      <TabsContent value="upload" className="mt-2">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".pem,.key,.pub,.ppk,*"
+                          onChange={handleFileUpload}
+                          className="hidden"
+                        />
+                        
+                        {uploadedFileName || formData.sshTunnel?.privateKey ? (
+                          <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
+                            <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                            <span className="text-sm flex-1 truncate">
+                              {uploadedFileName || "Key loaded"}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 shrink-0"
+                              onClick={handleRemoveUploadedFile}
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full h-24 border-dashed"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                              <Upload className="h-6 w-6" />
+                              <span className="text-xs">Click to select a private key file</span>
+                              <span className="text-xs text-muted-foreground/70">.pem, .key, or other key files</span>
+                            </div>
+                          </Button>
+                        )}
+                      </TabsContent>
+                    </Tabs>
+                    
+                    {/* PEM validation feedback */}
+                    {pemValidationError && (
+                      <div className="flex items-center gap-2 text-xs text-destructive">
+                        <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                        <span>{pemValidationError}</span>
+                      </div>
+                    )}
+                    {formData.sshTunnel?.privateKey && !pemValidationError && (
+                      <div className="flex items-center gap-2 text-xs text-green-600">
+                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                        <span>Valid PEM key detected</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid gap-2">

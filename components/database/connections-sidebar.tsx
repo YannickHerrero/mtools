@@ -9,6 +9,7 @@ import {
   Trash2,
   Plug,
   PlugZap,
+  Pencil,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Button } from "@/components/ui/button";
@@ -147,6 +148,72 @@ export function ConnectionsSidebar({
     await db.databaseConnections.delete(id);
   };
 
+  const handleEditConnection = async (conn: DatabaseConnection) => {
+    try {
+      // Decrypt the password
+      const passwordResponse = await fetch("/api/database/decrypt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ encryptedValue: conn.password }),
+      });
+
+      if (!passwordResponse.ok) {
+        throw new Error("Failed to decrypt password");
+      }
+
+      const { decryptedValue: decryptedPassword } = await passwordResponse.json();
+
+      // Decrypt SSH tunnel secrets if present
+      let decryptedSshTunnel = conn.sshTunnel;
+      if (conn.sshTunnel?.enabled && conn.sshTunnel.privateKey) {
+        const privateKeyResponse = await fetch("/api/database/decrypt", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ encryptedValue: conn.sshTunnel.privateKey }),
+        });
+
+        if (!privateKeyResponse.ok) {
+          throw new Error("Failed to decrypt SSH private key");
+        }
+
+        const { decryptedValue: decryptedPrivateKey } = await privateKeyResponse.json();
+
+        let decryptedPassphrase = "";
+        if (conn.sshTunnel.passphrase) {
+          const passphraseResponse = await fetch("/api/database/decrypt", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ encryptedValue: conn.sshTunnel.passphrase }),
+          });
+
+          if (!passphraseResponse.ok) {
+            throw new Error("Failed to decrypt SSH passphrase");
+          }
+
+          const { decryptedValue } = await passphraseResponse.json();
+          decryptedPassphrase = decryptedValue;
+        }
+
+        decryptedSshTunnel = {
+          ...conn.sshTunnel,
+          privateKey: decryptedPrivateKey,
+          passphrase: decryptedPassphrase,
+        };
+      }
+
+      // Set the edit connection with decrypted values
+      setEditConnection({
+        ...conn,
+        password: decryptedPassword,
+        sshTunnel: decryptedSshTunnel,
+      });
+      setDialogOpen(true);
+    } catch (error) {
+      console.error("Failed to decrypt connection data:", error);
+      // Optionally show an error toast/notification here
+    }
+  };
+
   const getProviderIcon = () => {
     return <Database className="h-4 w-4" />;
   };
@@ -234,6 +301,15 @@ export function ConnectionsSidebar({
                       Connect
                     </DropdownMenuItem>
                   )}
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditConnection(conn);
+                    }}
+                  >
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     className="text-destructive"
                     onClick={(e) => {
