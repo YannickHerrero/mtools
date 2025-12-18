@@ -5,6 +5,7 @@ import {
   Database,
   Table2,
   GitBranch,
+  Code2,
   Loader2,
   ChevronRight,
 } from "lucide-react";
@@ -19,6 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ConnectionsSidebar } from "@/components/database/connections-sidebar";
 import { DataTable } from "@/components/database/data-table";
 import { SchemaVisualizer } from "@/components/database/schema-visualizer";
+import { QueryEditor } from "@/components/database/query-editor";
 import type { DatabaseConnection, TableInfo } from "@/lib/database/types";
 import { PROVIDER_LABELS } from "@/lib/database/types";
 
@@ -222,6 +224,10 @@ export default function DatabasePage() {
                     <Table2 className="h-4 w-4" />
                     Data
                   </TabsTrigger>
+                  <TabsTrigger value="query" className="gap-2">
+                    <Code2 className="h-4 w-4" />
+                    Query
+                  </TabsTrigger>
                   <TabsTrigger value="schema" className="gap-2">
                     <GitBranch className="h-4 w-4" />
                     Schema
@@ -231,6 +237,10 @@ export default function DatabasePage() {
 
               <TabsContent value="data" className="flex-1 m-0 overflow-hidden">
                 <DataTable connection={connectedConnection} table={selectedTable} />
+              </TabsContent>
+
+              <TabsContent value="query" className="flex-1 m-0 overflow-hidden">
+                <QueryEditor connection={connectedConnection} />
               </TabsContent>
 
               <TabsContent value="schema" className="flex-1 m-0 overflow-hidden">
