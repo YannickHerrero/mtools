@@ -2,7 +2,7 @@ import Dexie, { type EntityTable } from 'dexie';
 import type { Collection, Folder, SavedRequest, RequestHistory } from './api-client/types';
 import type { Task } from './tasks/types';
 import type { Note, NoteCollection, NoteFolder } from './notes/types';
-import type { DatabaseConnection } from './database/types';
+import type { DatabaseConnection, QueryHistoryEntry } from './database/types';
 import type { Whiteboard, WhiteboardCollection, WhiteboardFolder } from './whiteboard/types';
 import type { Bookmark, BookmarkCategory } from './bookmarks/types';
 import type { KeePassDatabase, QuickUnlockSession } from './keepass/types';
@@ -17,6 +17,7 @@ const db = new Dexie('mtools') as Dexie & {
   noteFolders: EntityTable<NoteFolder, 'id'>;
   notes: EntityTable<Note, 'id'>;
   databaseConnections: EntityTable<DatabaseConnection, 'id'>;
+  queryHistory: EntityTable<QueryHistoryEntry, 'id'>;
   whiteboardCollections: EntityTable<WhiteboardCollection, 'id'>;
   whiteboardFolders: EntityTable<WhiteboardFolder, 'id'>;
   whiteboards: EntityTable<Whiteboard, 'id'>;
@@ -150,6 +151,27 @@ db.version(9).stores({
   quickUnlockSessions: '++id, databaseId, expiresAt, createdAt',
 });
 
+// Version 10: Add query history table for SQL query editor
+db.version(10).stores({
+  collections: '++id, name, createdAt, updatedAt',
+  folders: '++id, collectionId, parentFolderId, name, createdAt, updatedAt',
+  savedRequests: '++id, collectionId, folderId, name, method, url, createdAt, updatedAt',
+  requestHistory: '++id, method, url, executedAt',
+  tasks: '++id, status, order, createdAt, updatedAt',
+  noteCollections: '++id, name, isInbox, createdAt, updatedAt',
+  noteFolders: '++id, collectionId, parentFolderId, name, createdAt, updatedAt',
+  notes: '++id, collectionId, folderId, title, content, createdAt, updatedAt',
+  databaseConnections: '++id, name, provider, createdAt, updatedAt',
+  queryHistory: '++id, connectionId, executedAt, success',
+  whiteboardCollections: '++id, name, isInbox, createdAt, updatedAt',
+  whiteboardFolders: '++id, collectionId, parentFolderId, name, createdAt, updatedAt',
+  whiteboards: '++id, collectionId, folderId, title, createdAt, updatedAt',
+  bookmarkCategories: '++id, name, order, createdAt, updatedAt',
+  bookmarks: '++id, categoryId, title, url, order, createdAt, updatedAt',
+  keepassDatabases: '++id, name, fileName, createdAt, updatedAt',
+  quickUnlockSessions: '++id, databaseId, expiresAt, createdAt',
+});
+
 // History limit - keep only the last 100 entries
 const HISTORY_LIMIT = 100;
 
@@ -165,6 +187,24 @@ export async function addToHistory(entry: Omit<RequestHistory, 'id'>): Promise<n
       .limit(excess)
       .primaryKeys();
     await db.requestHistory.bulkDelete(oldestEntries);
+  }
+  
+  return id;
+}
+
+// Query history functions
+export async function addToQueryHistory(entry: Omit<QueryHistoryEntry, 'id'>): Promise<number> {
+  const id = await db.queryHistory.add(entry as QueryHistoryEntry) as number;
+  
+  // Clean up old entries if we exceed the limit
+  const count = await db.queryHistory.count();
+  if (count > HISTORY_LIMIT) {
+    const excess = count - HISTORY_LIMIT;
+    const oldestEntries = await db.queryHistory
+      .orderBy('executedAt')
+      .limit(excess)
+      .primaryKeys();
+    await db.queryHistory.bulkDelete(oldestEntries);
   }
   
   return id;
