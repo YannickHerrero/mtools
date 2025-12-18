@@ -92,6 +92,24 @@ export interface QueryResult {
   columns: ColumnInfo[];
 }
 
+export interface RawQueryResult {
+  rows: Record<string, unknown>[];
+  columns: { name: string; type: string }[];
+  rowCount: number;
+  executionTime: number;
+}
+
+export interface QueryHistoryEntry {
+  id?: number;
+  connectionId: number;
+  query: string;
+  executedAt: Date;
+  executionTime: number;
+  rowCount: number;
+  success: boolean;
+  error?: string;
+}
+
 export interface TestConnectionResult {
   success: boolean;
   error?: string;
