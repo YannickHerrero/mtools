@@ -64,9 +64,11 @@ export function useLeaderKey(options: UseLeaderKeyOptions = {}) {
       const isTyping =
         target.tagName === "INPUT" ||
         target.tagName === "TEXTAREA" ||
-        target.isContentEditable;
+        target.isContentEditable ||
+        // Check if inside Monaco editor
+        target.closest('.monaco-editor') !== null;
 
-      // Skip if typing in an input field
+      // Skip if typing in an input field or Monaco editor
       if (isTyping) return;
 
       // Skip if any modifier key is pressed
