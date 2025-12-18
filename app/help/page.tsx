@@ -1,10 +1,17 @@
 "use client";
 
-import { Bookmark, Keyboard, Navigation, Database, Layers, StickyNote, Send, HelpCircle, PenTool, KeyRound } from "lucide-react";
+import { useState } from "react";
+import { Bookmark, Keyboard, Navigation, Database, Layers, StickyNote, Send, HelpCircle, PenTool, KeyRound, Download, Upload, HardDrive } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { ExportDialog } from "@/components/export-import/export-dialog";
+import { ImportDialog } from "@/components/export-import/import-dialog";
 
 export default function HelpPage() {
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+
   return (
     <div className="flex flex-col h-screen">
       <div className="border-b px-4 py-2">
@@ -434,9 +441,57 @@ export default function HelpPage() {
             </ul>
           </section>
 
+          <Separator />
+
+          {/* Backup & Restore */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2">
+              <HardDrive className="h-5 w-5" />
+              <h2 className="text-xl font-semibold">Backup & Restore</h2>
+            </div>
+            <div className="space-y-3 text-sm">
+              <p className="text-muted-foreground">
+                Export all your data to transfer it to another browser or device, or create a backup. 
+                The export file is encrypted with a password you choose.
+              </p>
+              <div className="rounded-lg border p-4 space-y-4">
+                <div className="space-y-2">
+                  <h3 className="font-medium">What&apos;s included in the export:</h3>
+                  <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                    <li>API Client: Collections, saved requests, and request history</li>
+                    <li>Tasks: All tasks from the kanban board</li>
+                    <li>Notes: Note collections, folders, and notes</li>
+                    <li>Database Connections: Saved connections and query history</li>
+                    <li>Whiteboards: Collections, folders, and drawings</li>
+                    <li>Bookmarks: Categories and saved links</li>
+                    <li>KeePass: Database files (encrypted)</li>
+                  </ul>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <Button onClick={() => setExportDialogOpen(true)}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export Data
+                  </Button>
+                  <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Import Data
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  <strong>Note:</strong> When importing, existing items will be merged with your current data. 
+                  Items with newer timestamps in the backup will overwrite local versions.
+                </p>
+              </div>
+            </div>
+          </section>
+
           <div className="h-8" /> {/* Bottom spacing */}
         </div>
       </ScrollArea>
+
+      {/* Dialogs */}
+      <ExportDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} />
+      <ImportDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} />
     </div>
   );
 }
