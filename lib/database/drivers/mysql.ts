@@ -5,6 +5,7 @@ import type {
   TableSchema,
   QueryParams,
   QueryResult,
+  RawQueryResult,
   TestConnectionResult,
   ColumnInfo,
 } from "../types";
@@ -219,6 +220,77 @@ export class MySQLDriver implements DatabaseDriver {
         rows: cleanRows as Record<string, unknown>[],
         totalCount,
         columns,
+      };
+    } finally {
+      if (conn) conn.release();
+    }
+  }
+
+  async executeRawQuery(sqlQuery: string): Promise<RawQueryResult> {
+    // Validate that the query is read-only (SELECT only)
+    const trimmedQuery = sqlQuery.trim().toLowerCase();
+    if (!trimmedQuery.startsWith("select") && !trimmedQuery.startsWith("with")) {
+      throw new Error("Only SELECT queries are allowed. INSERT, UPDATE, DELETE, and DDL statements are not permitted.");
+    }
+
+    // Check for forbidden keywords that could modify data
+    const forbiddenPatterns = [
+      /\binsert\b/i,
+      /\bupdate\b/i,
+      /\bdelete\b/i,
+      /\bdrop\b/i,
+      /\bcreate\b/i,
+      /\balter\b/i,
+      /\btruncate\b/i,
+      /\bgrant\b/i,
+      /\brevoke\b/i,
+    ];
+
+    for (const pattern of forbiddenPatterns) {
+      if (pattern.test(sqlQuery)) {
+        throw new Error("Query contains forbidden keywords. Only SELECT queries are allowed.");
+      }
+    }
+
+    let conn: mariadb.PoolConnection | undefined;
+    try {
+      conn = await this.pool.getConnection();
+      
+      const startTime = Date.now();
+      const rows = await conn.query(sqlQuery, []);
+      const executionTime = Date.now() - startTime;
+
+      // Remove the 'meta' property that mariadb adds to results
+      const cleanRows = Array.isArray(rows) ? rows.filter((r: unknown) => typeof r === 'object' && r !== null) : [];
+
+      // Extract column information from the result
+      const columns: { name: string; type: string }[] = [];
+      if (cleanRows.length > 0) {
+        const firstRow = cleanRows[0];
+        for (const [key, value] of Object.entries(firstRow)) {
+          let type = "unknown";
+          if (value === null) {
+            type = "null";
+          } else if (typeof value === "number") {
+            type = Number.isInteger(value) ? "integer" : "numeric";
+          } else if (typeof value === "string") {
+            type = "text";
+          } else if (typeof value === "boolean") {
+            type = "boolean";
+          } else if (value instanceof Date) {
+            type = "timestamp";
+          } else if (typeof value === "object") {
+            type = "json";
+          }
+          columns.push({ name: key, type });
+        }
+      }
+
+      return {
+        rows: cleanRows as Record<string, unknown>[],
+        columns,
+        rowCount: cleanRows.length,
+        executionTime,
       };
     } finally {
       if (conn) conn.release();

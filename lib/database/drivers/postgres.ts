@@ -5,6 +5,7 @@ import type {
   TableSchema,
   QueryParams,
   QueryResult,
+  RawQueryResult,
   TestConnectionResult,
   ColumnInfo,
 } from "../types";
@@ -213,6 +214,67 @@ export class PostgresDriver implements DatabaseDriver {
       rows: rows as Record<string, unknown>[],
       totalCount,
       columns,
+    };
+  }
+
+  async executeRawQuery(sqlQuery: string): Promise<RawQueryResult> {
+    // Validate that the query is read-only (SELECT only)
+    const trimmedQuery = sqlQuery.trim().toLowerCase();
+    if (!trimmedQuery.startsWith("select") && !trimmedQuery.startsWith("with")) {
+      throw new Error("Only SELECT queries are allowed. INSERT, UPDATE, DELETE, and DDL statements are not permitted.");
+    }
+
+    // Check for forbidden keywords that could modify data
+    const forbiddenPatterns = [
+      /\binsert\b/i,
+      /\bupdate\b/i,
+      /\bdelete\b/i,
+      /\bdrop\b/i,
+      /\bcreate\b/i,
+      /\balter\b/i,
+      /\btruncate\b/i,
+      /\bgrant\b/i,
+      /\brevoke\b/i,
+    ];
+
+    for (const pattern of forbiddenPatterns) {
+      if (pattern.test(sqlQuery)) {
+        throw new Error("Query contains forbidden keywords. Only SELECT queries are allowed.");
+      }
+    }
+
+    const startTime = Date.now();
+    const rows = await this.sql.unsafe(sqlQuery, []);
+    const executionTime = Date.now() - startTime;
+
+    // Extract column information from the result
+    const columns: { name: string; type: string }[] = [];
+    if (rows.length > 0) {
+      const firstRow = rows[0];
+      for (const [key, value] of Object.entries(firstRow)) {
+        let type = "unknown";
+        if (value === null) {
+          type = "null";
+        } else if (typeof value === "number") {
+          type = Number.isInteger(value) ? "integer" : "numeric";
+        } else if (typeof value === "string") {
+          type = "text";
+        } else if (typeof value === "boolean") {
+          type = "boolean";
+        } else if (value instanceof Date) {
+          type = "timestamp";
+        } else if (typeof value === "object") {
+          type = "json";
+        }
+        columns.push({ name: key, type });
+      }
+    }
+
+    return {
+      rows: rows as Record<string, unknown>[],
+      columns,
+      rowCount: rows.length,
+      executionTime,
     };
   }
 

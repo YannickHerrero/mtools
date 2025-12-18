@@ -3,6 +3,7 @@ import type {
   TableSchema,
   QueryParams,
   QueryResult,
+  RawQueryResult,
   TestConnectionResult,
 } from "../types";
 
@@ -35,6 +36,11 @@ export interface DatabaseDriver {
    * Execute a paginated SELECT query on a table
    */
   query(params: QueryParams): Promise<QueryResult>;
+
+  /**
+   * Execute a raw SQL query (read-only SELECT queries only)
+   */
+  executeRawQuery(sql: string): Promise<RawQueryResult>;
 
   /**
    * Close the connection
