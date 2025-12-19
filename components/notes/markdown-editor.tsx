@@ -169,7 +169,7 @@ export function MarkdownEditor({ content, onChange, placeholder = "Start typing.
         />
       ) : (
         <div
-          onClick={handlePreviewClick}
+          onDoubleClick={handlePreviewClick}
           className={cn(
             "w-full h-full cursor-text overflow-auto",
             "px-4 py-4",

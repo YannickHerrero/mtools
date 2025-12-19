@@ -288,12 +288,11 @@ function NotesPageContent() {
                   <span>{characters} characters</span>
                 </div>
                 <div className="flex items-center gap-2">
+                  <span>Double click to edit</span>
+                  <span className="mx-2">•</span>
                   <kbd className="px-2 py-1 bg-muted rounded text-xs">Space</kbd>
                   <kbd className="px-2 py-1 bg-muted rounded text-xs">o</kbd>
                   <span>New note</span>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs ml-2">Space</kbd>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs">s</kbd>
-                  <span>Search</span>
                 </div>
               </div>
             </div>
