@@ -10,6 +10,7 @@ import {
   Plug,
   PlugZap,
   Pencil,
+  Copy,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Button } from "@/components/ui/button";
@@ -214,6 +215,23 @@ export function ConnectionsSidebar({
     }
   };
 
+  const handleDuplicateConnection = async (conn: DatabaseConnection) => {
+    const now = new Date();
+    await db.databaseConnections.add({
+      name: `${conn.name} (Copy)`,
+      provider: conn.provider,
+      host: conn.host,
+      port: conn.port,
+      database: conn.database,
+      username: conn.username,
+      password: conn.password, // Already encrypted
+      sslEnabled: conn.sslEnabled,
+      sshTunnel: conn.sshTunnel, // Already encrypted
+      createdAt: now,
+      updatedAt: now,
+    } as DatabaseConnection);
+  };
+
   const getProviderIcon = () => {
     return <Database className="h-4 w-4" />;
   };
@@ -309,6 +327,15 @@ export function ConnectionsSidebar({
                   >
                     <Pencil className="mr-2 h-4 w-4" />
                     Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDuplicateConnection(conn);
+                    }}
+                  >
+                    <Copy className="mr-2 h-4 w-4" />
+                    Duplicate
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="text-destructive"
