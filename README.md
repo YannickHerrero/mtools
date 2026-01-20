@@ -1,134 +1,139 @@
 # MTools
 
-A unified toolkit for work management and developer utilities. All data is stored locally in your browser.
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Demo](https://img.shields.io/badge/Demo-Live-brightgreen)](https://mtools-rho.vercel.app)
+
+> A privacy-first developer toolkit that runs entirely in your browser. No accounts, no cloud sync, no telemetry - just tools that work.
+
+## Highlights
+
+- **8 productivity tools** in one unified interface
+- **100% local storage** - all data stays in your browser (IndexedDB)
+- **Vim-style navigation** - leader key system for keyboard-driven workflows
+- **No account required** - start using immediately, no sign-up needed
+- **Encrypted secrets** - database passwords and credentials encrypted at rest
+- **Dark/Light/System themes** - seamless theme switching across all tools
+
+## Overview
+
+MTools consolidates essential developer utilities into a single, self-hosted web application. Instead of juggling between Postman, database GUIs, password managers, and note-taking apps, MTools brings them together with a consistent interface and keyboard-first design.
+
+**Built for developers who value:**
+- Privacy and data ownership
+- Keyboard-driven workflows
+- Minimal, focused interfaces
+- Self-hosted solutions
+
+**Try it now:** [mtools-rho.vercel.app](https://mtools-rho.vercel.app)
 
 ## Features
 
-### Task Board
+### Development Tools
 
-A Kanban-style board for managing your tasks:
+#### API Client
+A Postman alternative for testing REST APIs:
+- HTTP methods: GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS
+- Request builder with query params, headers, and JSON body (Monaco editor)
+- Organize requests into collections and folders
+- Collection-level authentication (Bearer, Basic, API Key)
+- Request history (last 100 requests)
+- Built-in CORS proxy for testing external APIs
 
-- **Five Columns** - Inbox, Todo, Doing, Done, and Archived
-- **Drag & Drop** - Reorder tasks within columns or move between columns
-- **Quick Capture** - Add tasks directly or via the command menu
-- **Task Details** - Click on any task to edit title and description
-- **Local Storage** - All tasks persisted locally using IndexedDB
+#### Database Viewer
+Browse and query databases directly from the browser:
+- PostgreSQL, MySQL, and MariaDB support
+- SSH tunneling for secure connections
+- Table browser with row counts and schema visualization
+- Data viewer with pagination, sorting, and filtering
+- SQL query editor with syntax highlighting and history
+- Encrypted credential storage
 
-### Notes
+### Productivity
 
-A minimal note-taking app with Markdown support:
+#### Tasks
+Kanban-style task board:
+- Five columns: Inbox, Todo, Doing, Done, Archived
+- Drag & drop reordering
+- Quick capture via command menu
 
-- **Markdown Editor** - Write in plain text with Markdown formatting
-- **Auto-save** - Notes automatically save after 3 seconds of inactivity
-- **Collections** - Organize notes into folders/collections
-- **Search** - Quickly find notes by title or content
-- **Word Count** - Track your writing progress in the footer
+#### Notes
+Markdown note-taking:
+- Monaco-based editor with live preview
+- Auto-save after 3 seconds of inactivity
+- Organize into collections and folders
+- Full-text search
 
-### Whiteboard
+#### Whiteboard
+Excalidraw-powered drawing canvas:
+- Shapes, arrows, text, freehand drawing
+- Auto-save as you draw
+- Theme-synced canvas (light/dark)
+- Organize into collections
 
-A drawing canvas powered by Excalidraw for sketches, diagrams, and visual thinking:
+### Organization
 
-- **Drawing Tools** - Shapes, arrows, text, freehand drawing, and more
-- **Auto-save** - Whiteboards automatically save as you draw
-- **Collections** - Organize whiteboards into collections and folders
-- **Search** - Quickly find whiteboards by title
-- **Theme Sync** - Canvas background automatically matches app theme (light/dark)
+#### Bookmarks
+Link manager with categories:
+- Custom categories with drag & drop reordering
+- Auto-fetched favicons
+- Search by title, URL, or description
+- Import/Export as JSON
 
-### Bookmarks
+#### Excel Viewer
+Client-side spreadsheet viewer:
+- Supports .xlsx, .xls, .xlsm
+- Web Worker parsing (non-blocking)
+- Multi-sheet navigation
 
-A bookmark manager to organize your favorite links:
+### Security
 
-- **Categories** - Organize bookmarks into custom categories (Work, Code, Personal, etc.)
-- **Grid Layout** - Full-page view with responsive grid display
-- **Drag & Drop** - Reorder bookmarks within categories
-- **Favicons** - Automatically fetches website favicons
-- **Search** - Filter bookmarks by title, URL, or description
-- **Import/Export** - Backup and restore bookmarks as JSON
-- **Quick Access** - Search and open bookmarks directly from the command menu (opens in new window)
-
-### API Client
-
-A fully-featured API testing tool (Postman alternative):
-
-- **HTTP Methods** - Support for GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS
-- **Request Builder** - Query parameters, headers, and JSON body editor with auto-completion
-- **Collections** - Organize requests into collections with nested folders
-- **Request History** - Automatically saves last 100 requests for quick access
-- **Local Storage** - All data persisted locally using IndexedDB (no cloud required)
-- **CORS Proxy** - Built-in proxy to test any external API without CORS issues
-
-### Database Viewer
-
-Browse and query your databases directly from the browser:
-
-- **Multiple Providers** - PostgreSQL, MySQL, and MariaDB support
-- **Connection Manager** - Save and manage multiple database connections
-- **SSH Tunneling** - Connect securely through SSH tunnels
-- **Table Browser** - View all tables with row counts
-- **Data Viewer** - Browse table data with pagination, sorting, and filtering
-- **Schema Visualizer** - View table schemas with column types and foreign keys
-- **Encrypted Storage** - Passwords and SSH keys are encrypted locally
-
-### KeePass Password Manager
-
-A secure password manager for managing KeePass databases (.kdbx files) directly in your browser:
-
-- **KeePass Support** - Open and manage KeePass v2 databases with full encryption support
-- **Key File Support** - Optional key file support for two-factor authentication
-- **Hierarchy Management** - Browse entries organized in groups and folders
-- **Full-Text Search** - Quickly search across all entries in your database
-- **Entry Details** - View usernames, passwords, URLs, tags, and notes
-- **Secure Clipboard** - Auto-clearing clipboard operations (30 seconds)
-- **Multiple Databases** - Manage and unlock multiple KeePass databases simultaneously
-- **Client-Side Security** - All decryption happens locally in your browser
-- **Lock/Unlock** - Lock databases to free memory while keeping them accessible
+#### KeePass Manager
+Password manager for .kdbx files:
+- KeePass v2/v4 support with Argon2
+- Key file two-factor authentication
+- Quick unlock with PIN
+- Auto-clearing clipboard (30 seconds)
+- Auto-lock after 30 minutes of inactivity
+- All decryption happens client-side
 
 ## Keyboard Shortcuts
 
-MTools uses a leader key system inspired by Vim. Press `Space` to activate leader mode.
+MTools uses a leader key system inspired by Vim. Press `Space` to activate leader mode, then press a key to execute an action.
 
-### Global
+### Navigation
 
 | Shortcut | Action |
 |----------|--------|
 | `Space` `Space` | Open Command Menu |
-| `Space` `t` | Go to Tasks |
-| `Space` `n` | Go to Notes |
-| `Space` `w` | Go to Whiteboard |
-| `Space` `b` | Go to Bookmarks |
 | `Space` `a` | Go to API Client |
+| `Space` `b` | Go to Bookmarks |
 | `Space` `d` | Go to Database |
+| `Space` `e` | Go to Excel |
 | `Space` `k` | Go to KeePass |
+| `Space` `n` | Go to Notes |
+| `Space` `t` | Go to Tasks |
+| `Space` `w` | Go to Whiteboard |
 | `Escape` | Cancel leader mode |
 
 ### Context-Aware
 
-| Shortcut | Action | Page |
-|----------|--------|------|
-| `Space` `o` | Create new note | Notes |
-| `Space` `s` | Focus search | Notes |
-| `Space` `o` | Create new task | Tasks |
-| `Cmd/Ctrl + S` | Save note | Notes |
-| `Space` `o` | Create new whiteboard | Whiteboard |
-| `Space` `s` | Focus search | Whiteboard |
-| `Space` `o` | Add new bookmark | Bookmarks |
-| `Space` `c` | Add new category | Bookmarks |
-| `Space` `s` | Focus search | Bookmarks |
-| `Space` `o` | Add database | KeePass |
-| `Space` `s` | Focus search | KeePass |
-| `Space` `l` | Lock database | KeePass |
+| Shortcut | Context | Action |
+|----------|---------|--------|
+| `Space` `o` | Most pages | Create new item |
+| `Space` `s` | Most pages | Focus search |
+| `Space` `c` | Bookmarks | Add new category |
+| `Space` `l` | KeePass | Lock database |
+| `Cmd/Ctrl + S` | Notes | Save note |
 
-## Tech Stack
-
-- **Framework**: Next.js 15 (App Router)
-- **UI**: shadcn/ui + Tailwind CSS
-- **Database**: IndexedDB via Dexie.js
-- **Drag & Drop**: dnd-kit
-- **Theme**: Dark/Light/System mode support
-
-## Getting Started
+## Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/YannickHerrero/mtools.git
+cd mtools
+
 # Install dependencies
 pnpm install
 
@@ -136,11 +141,53 @@ pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to access the toolkit.
+Open [http://localhost:5175](http://localhost:5175) to access MTools.
+
+### Environment Variables
+
+For database connections with encrypted credentials:
+
+```bash
+DATABASE_ENCRYPTION_KEY=your-32-byte-hex-key
+```
+
+## Tech Stack
+
+| Category | Technology |
+|----------|------------|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript 5 |
+| UI | shadcn/ui + Tailwind CSS 4 |
+| Storage | IndexedDB via Dexie.js |
+| Editor | Monaco Editor |
+| Drawing | Excalidraw |
+| Drag & Drop | dnd-kit |
+| Database Drivers | postgres, mariadb |
+| SSH | ssh2, tunnel-ssh |
+| KeePass | kdbxweb, hash-wasm (Argon2) |
+| Excel | SheetJS (xlsx) |
 
 ## Privacy
 
-All data is stored locally in your browser using IndexedDB. Nothing is sent to external servers (except your actual API requests through the proxy).
+MTools is designed with privacy as a core principle:
+
+- **Local-first**: All data stored in browser IndexedDB
+- **No telemetry**: Zero tracking or analytics
+- **No accounts**: No sign-up, no cloud sync
+- **Encrypted secrets**: Database passwords encrypted with AES-GCM
+- **Client-side crypto**: KeePass decryption happens entirely in your browser
+
+The only network requests made are:
+1. Your actual API requests (through the CORS proxy)
+2. Database queries (to your own databases)
+3. Favicon fetches for bookmarks
+
+## Contributing
+
+Contributions are welcome! Feel free to:
+
+- [Open an issue](https://github.com/YannickHerrero/mtools/issues) for bugs or feature requests
+- Submit a pull request
 
 ## License
 
